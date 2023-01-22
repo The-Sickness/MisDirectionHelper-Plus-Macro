@@ -37,4 +37,4 @@ Kazragore for the German translation
 Spiritlebon for the French translation
  
 
-I am not the original author. I have just maintained and updated this since BFA. As of 10.0 there is an issue with the theme part of the addon that deals with ElvUI. Once 10.0 goes live I will take a look at the themes again.
+I am not the original author. I have just maintained and updated this since BFA. 
