@@ -37,4 +37,4 @@ Kazragore for the German translation
 Spiritlebon for the French translation
  
 
-I am not the original author. I have just maintained and updated this since BFA. 
+https://legacy.curseforge.com/wow/addons/misdirectionhelper
