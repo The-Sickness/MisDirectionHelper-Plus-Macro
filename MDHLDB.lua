@@ -173,7 +173,7 @@ local function createMainPanel()
 	title:SetPoint("CENTER", frame, "CENTER", 0, 170)
 	version:SetText(_G.GAME_VERSION_LABEL .. " " .. GetAddOnMetadata("MisdirectionHelper2", "Version"))
 	version:SetPoint("CENTER", frame, "CENTER", 0, 130)
-	author:SetText(L["Author"] .. ": Deepac/Sharpedge_Gaming")
+	author:SetText(L["Author"] .. ": Deepac")
 	author:SetPoint("CENTER", frame, "CENTER", 0, 100)
 	return frame
 end
@@ -263,7 +263,7 @@ function MDH:OnInitialize()
 	local AceConfigDialog = LibStub("AceConfigDialog-3.0")
 	local AceDBOptions = LibStub("AceDBOptions-3.0")
 	local mainPanel = createMainPanel()
-	local optionsTable 
+	local optionsTable, themesTable
 	local k, v
 
 	MDH.db = LibStub("AceDB-3.0"):New("MisDirectionHelperDB", defaults)
@@ -912,13 +912,77 @@ function MDH:OnInitialize()
 	AceConfig:RegisterOptionsTable("MisdirectionHelperThemes", themesTable)
 	AceConfig:RegisterOptionsTable("MisdirectionHelperProfiles", AceDBOptions:GetOptionsTable(MDH.db))
 	MDH.optionsFrame = AceConfigDialog:AddToBlizOptions("MisdirectionHelperOptions", _G.MAIN_MENU, "Misdirection Helper 2")
-	
+	AceConfigDialog:AddToBlizOptions("MisdirectionHelperThemes", L["Themes"], "Misdirection Helper 2")
 	AceConfigDialog:AddToBlizOptions("MisdirectionHelperProfiles", L["Profiles"], "Misdirection Helper 2")
 	MDH:CreateLDBObject()
 	if icon then icon:Register("MisdirectionHelper", MDH.dataObject, MDH.db.profile.minimap) end
 	if (GetNumSubgroupMembers() > 0) or (GetNumGroupMembers() > 0) or (UnitInRaid("player")) then MDH.ingroup = true end
 	MDH:MDHOnload()
 end
+
+function MDH:OnEnable()
+    -- Initialize fonts
+    MDH.fonts = {}
+    MDH.fonts.MDHHeaderFont = {font=CreateFont("MDHHeaderFont")}
+    MDH.fonts.MDHHeaderFont.font:SetFont(GameTooltipHeaderText:GetFont(), 15, "")
+    MDH.fonts.MDHLineFont = {font=CreateFont("MDHLineFont")}
+    MDH.fonts.MDHLineFont.font:SetFont(GameTooltipText:GetFont(), 12, "")
+
+    local mdhfont = CreateFont("ElvFont")
+    if IsAddOnLoaded("Tukui") then
+        local T, C, L = unpack(Tukui)
+        if C.Medias then
+            mdhfont:SetFont(C.Medias.Font, 12, "")
+        else
+            mdhfont:SetFont(C.Media.font, 12, "")
+        end
+    elseif IsAddOnLoaded("ElvUI") then
+        local E, L, V, P, G, DF = unpack(ElvUI)
+        mdhfont:SetFont(E["media"].normFont, 12, "")
+    else
+        mdhfont:SetFont(GameTooltipText:GetFont(), 12, "")
+    end
+
+    MDH.fonts.ElvUIHeaderFont = {font=mdhfont}
+    MDH.fonts.ElvUIHeaderFont.font:SetFont(mdhfont:GetFont(), 14, "")
+    MDH.fonts.ElvUILineFont = {font=mdhfont}
+    MDH.fonts.ElvUILineFont.font:SetFont(mdhfont:GetFont(), 12, "")
+
+    mdhfont = CreateFont("Friz")
+    MDH.fonts.FrizHeaderFont = {font=mdhfont}
+    MDH.fonts.FrizHeaderFont.font:SetFont("Fonts\\FRIZQT__.TTF", 14, "")
+    MDH.fonts.FrizLineFont = {font=mdhfont}
+    MDH.fonts.FrizLineFont.font:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
+
+    mdhfont = CreateFont("ArialN")
+    MDH.fonts.ArialNHeaderFont = {font=mdhfont}
+    MDH.fonts.ArialNHeaderFont.font:SetFont("Fonts\\ARIALN.TTF", 14, "")
+    MDH.fonts.ArialNLineFont = {font=mdhfont}
+    MDH.fonts.ArialNLineFont.font:SetFont("Fonts\\ARIALN.TTF", 12, "")
+
+    mdhfont = CreateFont("Skurri")
+    MDH.fonts.SkurriHeaderFont = {font=mdhfont}
+    MDH.fonts.SkurriHeaderFont.font:SetFont("Fonts\\SKURRI.TTF", 14, "")
+    MDH.fonts.SkurriLineFont = {font=mdhfont}
+    MDH.fonts.SkurriLineFont.font:SetFont("Fonts\\SKURRI.TTF", 12, "")
+
+    mdhfont = CreateFont("Morpheus")
+    MDH.fonts.MorpheusHeaderFont = {font=mdhfont}
+    MDH.fonts.MorpheusHeaderFont.font:SetFont("Fonts\\MORPHEUS.TTF", 14, "")
+    MDH.fonts.MorpheusLineFont = {font=mdhfont}
+    MDH.fonts.MorpheusLineFont.font:SetFont("Fonts\\MORPHEUS.TTF", 12, "")
+
+    for k, v in pairs(MDH.db.global.custom) do
+        MDH.themes[k] = v
+    end
+    updateThemeList()
+    _G.SLASH_MDH_CMD1 = "/mdh"
+    _G.SlashCmdList["MDH_CMD"] = function(input)
+        InterfaceOptionsFrame_OpenToCategory(MDH.optionsFrame)
+        InterfaceOptionsFrame_OpenToCategory(MDH.optionsFrame)
+    end
+end
+
 
 
 
