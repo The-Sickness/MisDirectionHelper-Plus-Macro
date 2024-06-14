@@ -1,39 +1,71 @@
+-- Load embedded libraries
+local LibStub = LibStub or _G.LibStub
+local AceDB = LibStub:GetLibrary("AceDB-3.0")
+local AceAddon = LibStub:GetLibrary("AceAddon-3.0")
+local AceConfig = LibStub:GetLibrary("AceConfig-3.0")
+local AceConfigDialog = LibStub:GetLibrary("AceConfigDialog-3.0")
+local icon = LibStub:GetLibrary("LibDBIcon-1.0")
+local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
+local LSM = LibStub:GetLibrary("LibSharedMedia-3.0")
+local AceGUI = LibStub:GetLibrary("AceGUI-3.0")
+
 MDH = LibStub("AceAddon-3.0"):NewAddon("MDH", "AceEvent-3.0")
 local MDH = MDH
+MDH = MDH or {}
 MDH.uc = select(2, UnitClass("player"))
+
+local function ensureString(value)
+    if type(value) == "table" then
+        
+        return tostring(value)
+    end
+    return value
+end
+
 local uc = MDH.uc
 if (uc ~= "HUNTER") and (uc ~= "ROGUE") then return end
+
 local LibStub = LibStub
-MDH.L = LibStub("AceLocale-3.0"):GetLocale("MisDirectionHelper",true)
+MDH.L = LibStub("AceLocale-3.0"):GetLocale("MisDirectionHelper", true)
 local L = MDH.L
 local icon = LibStub("LibDBIcon-1.0")
 local _G = _G
 local MDHText = "MDH"
 local channels = {["RAID"] = _G.RAID, ["PARTY"] = _G.PARTY, ["WHISPER"] = _G.WHISPER}
 local misdtarget
-local GetSpellInfo = GetSpellInfo
-local imd = GetSpellInfo(34477)
-local itt = GetSpellInfo(57934)
-local iua = GetSpellInfo(51672)
+local GetSpellInfo = C_Spell.GetSpellInfo
+
+-- Fetch spell info and store as strings
+local imdSpellInfo = C_Spell.GetSpellInfo(34477)
+local ittSpellInfo = C_Spell.GetSpellInfo(57934)
+local iuaSpellInfo = C_Spell.GetSpellInfo(51672)
+
+local imd = { name = imdSpellInfo and imdSpellInfo.name or "Unknown Spell", id = 34477 }
+local itt = { name = ittSpellInfo and ittSpellInfo.name or "Unknown Spell", id = 57934 }
+local iua = { name = iuaSpellInfo and iuaSpellInfo.name or "Unknown Spell", id = 51672 }
+
 local hiconinfo = {
-	[imd] = {"Interface\\Icons\\Ability_Hunter_Misdirection", 151},
+    [imd.name] = {"Interface\\Icons\\Ability_Hunter_Misdirection", 151},
 }
-local hicons = {[151] = imd}
+local hicons = {[151] = imd.name}
 local iconm = {
-	[151] = "Ability_Hunter_Misdirection",
-	[454] = "Ability_Rogue_TricksOftheTrade",
-	[457] = "Ability_Rogue_UnfairAdvantage",
+    [151] = "Ability_Hunter_Misdirection",
+    [454] = "Ability_Rogue_TricksOftheTrade",
+    [457] = "Ability_Rogue_UnfairAdvantage",
 }
-local riconinfo = {[itt] = {"Interface\\Icons\\Ability_Rogue_TricksOftheTrade", 454},}
-local ricons = {[454] = itt, [457] = iua}
-local callpet ={
-	[1] = GetSpellInfo(883),
-	[2] = GetSpellInfo(83242),
-	[3] = GetSpellInfo(83243),
-	[4] = GetSpellInfo(83244),
-	[5] = GetSpellInfo(83245),
+local riconinfo = {[itt.name] = {"Interface\\Icons\\Ability_Rogue_TricksOftheTrade", 454},}
+local ricons = {[454] = itt.name, [457] = iua.name}
+
+local callpet = {
+    [1] = { name = (C_Spell.GetSpellInfo(883) or {}).name or "Unknown Spell", id = 883 },
+    [2] = { name = (C_Spell.GetSpellInfo(83242) or {}).name or "Unknown Spell", id = 83242 },
+    [3] = { name = (C_Spell.GetSpellInfo(83243) or {}).name or "Unknown Spell", id = 83243 },
+    [4] = { name = (C_Spell.GetSpellInfo(83244) or {}).name or "Unknown Spell", id = 83244 },
+    [5] = { name = (C_Spell.GetSpellInfo(83245) or {}).name or "Unknown Spell", id = 83245 },
 }
-local dismisspet = GetSpellInfo(2641)
+
+local dismisspet = { name = (C_Spell.GetSpellInfo(2641) or {}).name or "Unknown Spell", id = 2641 }
+
 local UnitName = UnitName
 local GetPartyAssignment = GetPartyAssignment
 local UnitGetAvailableRoles = UnitGetAvailableRoles
@@ -50,45 +82,140 @@ local UnitAffectingCombat, UnitInRaid, GetStablePetInfo, UnitIsPlayer = UnitAffe
 local SendChatMessage, CreateFrame = SendChatMessage, CreateFrame
 local GameTooltipText, GameTooltipHeaderText = GameTooltipText, GameTooltipHeaderText
 
--- GLOBALS: MDH MDHWaitFrame Tukui ElvUI InterfaceOptionsFrame_OpenToCategory StaticPopup_Show GetAddOnMetadata InterfaceOptions_AddCategory
-
 local function set(info, value)
-	local key = info[#info]
-	MDH.db.profile[key] = value
+    local key = info[#info]
+	
+    if type(value) == "table" then
+        
+        value = tostring(value)
+    end
+    MDH.db.profile[key] = value
 end
 
 local function get(info)
-	local key = info[#info]
-	return MDH.db.profile[key]
+    local key = info[#info]
+    local value = MDH.db.profile[key]
+    
+    if type(value) == "table" then
+        
+        value = tostring(value)
+    end
+    return value
 end
 
-local modkeys = {[1] = "shift",[2] = "ctrl",[3] = "alt",}
-local modopts = {[1] = _G.SHIFT_KEY,[2] = _G.CTRL_KEY,[3] = _G.ALT_KEY,}
+local modkeys = {[1] = "shift", [2] = "ctrl", [3] = "alt",}
+local modopts = {[1] = _G.SHIFT_KEY, [2] = _G.CTRL_KEY, [3] = _G.ALT_KEY,}
 
 local defaults = {
-	profile = {
-		minimap = {hide = false},
-		cChannel = "PARTY",
-		name = "Pet",
-		petname = _G.UNKNOWN,
-		bAnnounce = nil,
-		hicon = 151,
-		ricon = 454,
-		hname = "MDH " .. imd,
-		rname = "MDH " .. itt,
-		target = "pet",
-		target2 = nil,
-		target3 = nil,
-		name2 = nil,
-		clearjoin = nil,
-		remind = nil,
-		modkey = 1,
-		autotank = nil,
-		autopet = nil,
-		theme = _G.DEFAULT,
-	},
-	global = { custom = {} },
+    profile = {
+        minimap = {hide = false},
+        cChannel = "PARTY",
+        name = "Pet",
+        petname = _G.UNKNOWN,
+        bAnnounce = nil,
+        hicon = 151,
+        ricon = 454,
+        hname = tostring(imd.name), 
+        rname = tostring(itt.name),
+        target = "pet",
+        target2 = nil,
+        target3 = nil,
+        name2 = nil,
+        clearjoin = nil,
+        remind = nil,
+        modkey = 1,
+        autotank = nil,
+        autopet = nil,
+        theme = _G.DEFAULT,
+    },
+    global = { custom = {} },
 }
+
+function MDH:MDHLoad()
+	if UnitExists("pet") then MDH:MDHgetpet() end
+	MDH:MDHEditMacro()
+end
+
+function MDH:MDHEditMacro()
+    if InCombatLockdown() then return end
+
+    local singlemacro, multiplemacro, macro, macroid
+    local spell, id, mname, modkey
+
+    if uc == "HUNTER" then
+        spell = imd
+        id = MDH.db.profile.hicon or hiconinfo[imd.name][2]
+        mname = MDH.db.profile.hname or imd.name
+    elseif uc == "ROGUE" then
+        spell = itt
+        id = MDH.db.profile.ricon or riconinfo[itt.name][2]
+        mname = MDH.db.profile.rname or itt.name
+    else
+        print("Error: Unsupported class")
+        return
+    end
+
+    modkey = modkeys[MDH.db.profile.modkey]
+   
+    mname = ensureString(mname)
+
+    MDH:MDHTextUpdate()
+
+    singlemacro = "#showtooltip\n/use [mod:" .. modkey .. ",@none][@%s,nodead]%s;%s"
+    multiplemacro = "#showtooltip\n/use [mod:" .. modkey .. ",@none][btn:1,@%s,nodead][btn:2,@%s,nodead]%s;%s"
+
+    local target = ensureString(MDH.db.profile.target or "target")
+    local target2 = ensureString(MDH.db.profile.target2 or "target")
+   
+    if MDH.db.profile.target2 then
+        macro = format(multiplemacro, target, target2, spell.name, spell.name)
+    else
+        macro = format(singlemacro, target, spell.name, spell.name)
+    end
+    
+    macroid = GetMacroIndexByName(mname)
+    if macroid == 0 then
+        CreateMacro(mname, iconm[id], macro, 1, 1)
+    else
+        EditMacro(macroid, mname, iconm[id], macro)
+    end
+end
+
+function MDH:MDHChat()
+	if IsAddOnLoaded("CastYeller2") or IsAddOnLoaded("CastYeller") then return end
+	local chan = MDH.db.profile.cChannel or "RAID"
+	local s
+	local spelllink = (uc == "HUNTER") and GetSpellLink(35079) or GetSpellLink(57934)
+	local msg = format(L["%s casts %s on %s"], UnitName("player"), spelllink, misdtarget)
+
+	if chan == "PARTY" and GetNumSubgroupMembers() ~= 0 then
+		if (IsInGroup(_G.LE_PARTY_CATEGORY_INSTANCE)) then chan = "INSTANCE_CHAT" end
+		s = true
+
+	elseif chan == "RAID" and IsInRaid() then s = true
+	elseif chan == "WHISPER" then if UnitIsPlayer(misdtarget) then s = true end end
+	if s then SendChatMessage(msg, chan, nil, misdtarget) end
+end
+
+local function createMainPanel()
+    local frame = CreateFrame("Frame", "MisdirectionHelperMain")
+    local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    local version = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    local author = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    local maintainer = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+
+    title:SetFormattedText("|T%s:%d|t %s", "Interface\\ICONS\\Ability_Hunter_Misdirection", 32, "Misdirection Helper 2")
+    title:SetPoint("CENTER", frame, "CENTER", 0, 170)
+    
+    version:SetPoint("CENTER", frame, "CENTER", 0, 130)
+    author:SetText(L["Author"] .. ": Deepac")
+    author:SetPoint("CENTER", frame, "CENTER", 0, 100)
+    
+    maintainer:SetText("Maintainer: Sharpedge_Gaming")
+    maintainer:SetPoint("CENTER", frame, "CENTER", 0, 70)
+    
+    return frame
+end
 
 --************ THEMES ************
 local themelist, customlist
@@ -102,81 +229,19 @@ MDH.themes = {
 }
 
 local function GetTTFont(font)
-	local pos = string.find(font, "Header") or string.find(font, "Line")
-	local name = string.sub(font, 1, pos - 1)
-	local fpos, k, v
-	for k, v in pairs(fontlist) do if v == name then fpos = k; break end end
-	return fpos
+    local pos = string.find(font, "Header") or string.find(font, "Line")
+    local name = string.sub(font, 1, pos - 1)
+    local fpos
+    for k, v in pairs(fontlist) do
+        if v == name then
+            fpos = k
+            break
+        end
+    end
+    return fpos
 end
 
---********************************
 function MDH:MDHTextUpdate() MDH.dataObject.text = MDH:TTText("both") end
-
-function MDH:MDHLoad()
-	if UnitExists("pet") then MDH:MDHgetpet() end
-	MDH:MDHEditMacro()
-end
-
-function MDH:MDHEditMacro()
-	--cannot edit/create macros during combat
-	if InCombatLockdown() then return end
-	local singlemacro, multiplemacro, macro, macroid, hovermacro
-	local spell = imd
-	local id = MDH.db.profile.hicon or hiconinfo[imd][2]
-	local mname = MDH.db.profile.hname
-	local modkey = modkeys[MDH.db.profile.modkey]
-	if uc == "ROGUE" then
-		spell = itt
-		id = MDH.db.profile.ricon or riconinfo[itt][2]
-		mname = MDH.db.profile.rname
-	end
-	MDH:MDHTextUpdate()
-	singlemacro = "#showtooltip\n/use [mod:" .. modkey .. ",@none][@%s,nodead]%s;%s"
-	multiplemacro = "#showtooltip\n/use [mod:" .. modkey .. ",@none][btn:1,@%s,nodead][btn:2,@%s,nodead]%s;%s"
-	--if MDH.db.profile.target3 then
-		--singlemacro = "#showtooltip\n/use [@mouseover,nodead]%s\n/use [mod:" .. modkey .. ",@none][@%s,nodead]%s;%s"
-		--multiplemacro = "#showtooltip\n/use [@mouseover,nodead]%s\n/use [mod:" .. modkey .. ",@none][btn:1,@%s,nodead][btn:2,@%s,nodead]%s;%s"
-	--end
-	if MDH.db.profile.target2 then macro = format(multiplemacro, MDH.db.profile.target or "target", MDH.db.profile.target2 or "target", spell, spell)
-	else macro = format(singlemacro, MDH.db.profile.target or "target", spell, spell) end
-	macroid = GetMacroIndexByName(mname)
-	if macroid == 0 then CreateMacro(mname , iconm[id], macro, 1, 1)
-	else EditMacro(macroid, mname , iconm[id], macro) end
-end
-
-function MDH:MDHChat()
-	if IsAddOnLoaded("CastYeller2") or IsAddOnLoaded("CastYeller") then return end
-	--local msg = format((uc == "HUNTER") and L["%s Misdirects to %s"] or L["%s casts Tricks of the Trade on %s"], UnitName("player"), misdtarget)
-	local chan = MDH.db.profile.cChannel or "RAID"
-	local s
-	local spelllink = (uc == "HUNTER") and GetSpellLink(35079) or GetSpellLink(57934)
-	local msg = format(L["%s casts %s on %s"], UnitName("player"), spelllink, misdtarget)
-	--LFD fix courtesy of Eincrou
-	--*****
-	if chan == "PARTY" and GetNumSubgroupMembers() ~= 0 then
-		if (IsInGroup(_G.LE_PARTY_CATEGORY_INSTANCE)) then chan = "INSTANCE_CHAT" end
-		s = true
-	--*****
-	--if chan == "PARTY" and GetNumSubgroupMembers() ~= 0 then s = true
-	elseif chan == "RAID" and IsInRaid() then s = true
-	elseif chan == "WHISPER" then if UnitIsPlayer(misdtarget) then s = true end end
-	if s then SendChatMessage(msg, chan, nil, misdtarget) end
-end
-
---First visible options frame
-local function createMainPanel()
-	local frame = CreateFrame("Frame", "MisdirectionHelperMain")
-	local title = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-	local version = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-	local author = frame:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-	title:SetFormattedText("|T%s:%d|t %s", "Interface\\ICONS\\Ability_Hunter_Misdirection", 32, "Misdirection Helper 2")
-	title:SetPoint("CENTER", frame, "CENTER", 0, 170)
-	version:SetText(_G.GAME_VERSION_LABEL .. " " .. GetAddOnMetadata("MisdirectionHelper2", "Version"))
-	version:SetPoint("CENTER", frame, "CENTER", 0, 130)
-	author:SetText(L["Author"] .. ": Deepac")
-	author:SetPoint("CENTER", frame, "CENTER", 0, 100)
-	return frame
-end
 
 local function stringify(array)
 	local out = ""
@@ -186,29 +251,41 @@ local function stringify(array)
 end
 
 local function encodeTheme(theme)
-	local encoded = "1" .. GetTTFont(theme.headerfont) .. ":2" .. GetTTFont(theme.linefont)
-	local keys = {["title"] = 3, ["spacer"] = 4, ["group1"] = 5, ["group2"] = 6, ["group3"] = 7, ["group4"] = 8, ["group5"] = 9}
-	for k, v in pairs(theme) do if k ~= "headerfont" and k ~= "linefont" then encoded = encoded .. ":" .. keys[k] .. stringify(v) end end
-	return encoded
+    local encoded = "1" .. GetTTFont(theme.headerfont) .. ":2" .. GetTTFont(theme.linefont)
+    local keys = {["title"] = 3, ["spacer"] = 4, ["group1"] = 5, ["group2"] = 6, ["group3"] = 7, ["group4"] = 8, ["group5"] = 9}
+    for k, v in pairs(theme) do 
+        if k ~= "headerfont" and k ~= "linefont" then 
+            encoded = encoded .. ":" .. keys[k] .. stringify(v) 
+        end 
+    end
+    return encoded
 end
 
 local function destringify(val)
-	local vals = {strsplit(";", val)}
-	if vals[6] then return vals[1], vals[2], vals[3], vals[4], vals[5], vals[6]
-	elseif vals[5] then return vals[1], vals[2], vals[3], vals[4], vals[5]
-	else return vals[1], vals[2], vals[3], vals[4] end
+    local vals = {strsplit(";", val)}
+    if vals[6] then 
+        return vals[1], vals[2], vals[3], vals[4], vals[5], vals[6]
+    elseif vals[5] then 
+        return vals[1], vals[2], vals[3], vals[4], vals[5]
+    else 
+        return vals[1], vals[2], vals[3], vals[4] 
+    end
 end
 
 function MDH:decodeTheme(encoded)
-	local keys = {[3] = "title", [4] = "spacer", [5] = "group1", [6] = "group2", [7] = "group3", [8] = "group4", [9] = "group5"}
-	local vals = {strsplit(":", encoded)}
-	local ord, v2
-	for _, v in ipairs(vals) do
-		ord = tonumber(string.sub(v, 1, 1))
-		if ord == 1 then temptheme.headerfont = fontlist[tonumber(string.sub(v, 2, 2))] .. "HeaderFont"
-		elseif ord == 2 then temptheme.linefont = fontlist[tonumber(string.sub(v, 2, 2))] .. "LineFont"
-		else temptheme[keys[ord]] = {destringify(string.sub(v, 2))} end
-	end
+    local keys = {[3] = "title", [4] = "spacer", [5] = "group1", [6] = "group2", [7] = "group3", [8] = "group4", [9] = "group5"}
+    local vals = {strsplit(":", encoded)}
+    local ord, v2
+    for _, v in ipairs(vals) do
+        ord = tonumber(string.sub(v, 1, 1))
+        if ord == 1 then 
+            temptheme.headerfont = fontlist[tonumber(string.sub(v, 2, 2))] .. "HeaderFont"
+        elseif ord == 2 then 
+            temptheme.linefont = fontlist[tonumber(string.sub(v, 2, 2))] .. "LineFont"
+        else 
+            temptheme[keys[ord]] = {destringify(string.sub(v, 2))} 
+        end
+    end
 end
 
 local function validateThemeName(info, value)
@@ -221,41 +298,41 @@ local function validateThemeName(info, value)
 end
 
 local function updateThemeList()
-	themelist, customlist = {}, {}
-	for k in pairs(MDH.themes) do themelist[k] = k end
-	for k in pairs(MDH.db.global.custom) do customlist[k] = k end
+    themelist, customlist = {}, {}
+    for k in pairs(MDH.themes) do themelist[k] = k end
+    for k in pairs(MDH.db.global.custom) do customlist[k] = k end
 end
 
 local function saveTheme()
-	if type(validateThemeName(nil, tempname)) ~= "boolean" then return end
-	MDH.db.global.custom[tempname] = temptheme
-	MDH.themes[tempname] = temptheme
-	updateThemeList()
-	tempname = nil
-	tempdata = nil
-	MDH:ShowError(L["Theme saved"])
+    if type(validateThemeName(nil, tempname)) ~= "boolean" then return end
+    MDH.db.global.custom[tempname] = temptheme
+    MDH.themes[tempname] = temptheme
+    updateThemeList()
+    tempname = nil
+    tempdata = nil
+    MDH:ShowError(L["Theme saved"])
 end
 
 local function editTheme()
-	MDH.db.global.custom[tempname] = temptheme
-	MDH.themes[tempname] = temptheme
-	tempname = nil
-	MDH:ShowError(L["Theme saved"])
+    MDH.db.global.custom[tempname] = temptheme
+    MDH.themes[tempname] = temptheme
+    tempname = nil
+    MDH:ShowError(L["Theme saved"])
 end
 
 local function deleteTheme()
-	if not tempname then MDH:ShowError(L["Please enter a valid theme name"]); return end
-	if MDH.db.profile.theme == tempname then MDH.db.profile.theme = _G.DEFAULT end
-	MDH.db.global.custom[tempname] = nil
-	MDH.themes[tempname] = nil
-	updateThemeList()
-	tempname = nil
-	MDH:ShowError(L["Theme deleted"])
+    if not tempname then MDH:ShowError(L["Please enter a valid theme name"]); return end
+    if MDH.db.profile.theme == tempname then MDH.db.profile.theme = _G.DEFAULT end
+    MDH.db.global.custom[tempname] = nil
+    MDH.themes[tempname] = nil
+    updateThemeList()
+    tempname = nil
+    MDH:ShowError(L["Theme deleted"])
 end
 
 local function checkThemes()
-	for k, v in pairs(MDH.db.global.custom) do if k then return false end end
-	return true
+    for k in pairs(MDH.db.global.custom) do if k then return false end end
+    return true
 end
 
 function MDH:OnInitialize()
@@ -265,6 +342,8 @@ function MDH:OnInitialize()
 	local mainPanel = createMainPanel()
 	local optionsTable, themesTable
 	local k, v
+	
+	self.db = AceDB:New("MisdirectionHelperDB", defaults, true)
 
 	MDH.db = LibStub("AceDB-3.0"):New("MisDirectionHelperDB", defaults)
 	optionsTable = {
@@ -365,7 +444,7 @@ function MDH:OnInitialize()
 				name = L["Misdirection macro icon"],
 				order = 8,
 				hidden = function() return uc == "ROGUE" end,
-				get = function() return MDH.db.profile.hicon or hiconinfo[imd][2] end,
+				get = function() return MDH.db.profile.hicon or hiconinfo[imd.name][2] end,
 				set = function(info, value)
 					MDH.db.profile.hicon = value
 					MDH:MDHEditMacro()
@@ -377,7 +456,7 @@ function MDH:OnInitialize()
 				name = L["Tricks of the Trade macro icon"],
 				order = 9,
 				hidden = function() return uc == "HUNTER" end,
-				get = function() return MDH.db.profile.ricon or riconinfo[itt][2] end,
+				get = function() return MDH.db.profile.ricon or riconinfo[itt.name][2] end,
 				set = function(info, value)
 					MDH.db.profile.ricon = value
 					MDH:MDHEditMacro()
@@ -440,7 +519,7 @@ function MDH:OnInitialize()
 						type = "select",
 						name = L["Select"],
 						get = function() return MDH.db.profile.theme or themelist[1] end,
-						set = function(info, value) MDH.db.profile.theme = value end,
+						set = function(info, value) MDH.db.profile.theme = value; MDH:ApplyTheme(value) end,
 						values = function() return themelist end,
 					},
 				},
@@ -498,7 +577,7 @@ function MDH:OnInitialize()
 						name = L["Line font"],
 						values = fontlist,
 						get = function() return GetTTFont(temptheme.linefont) end,
-						set = function(info, val) temptheme.headerfont = fontlist[val] .. "LineFont" end,
+						set = function(info, val) temptheme.linefont = fontlist[val] .. "LineFont" end,
 					},
 					spacer3 = {
 						order = 5.5,
@@ -668,7 +747,7 @@ function MDH:OnInitialize()
 						values = fontlist,
 						hidden = function() return tempname == nil end,
 						get = function() return GetTTFont(temptheme.linefont) end,
-						set = function(info, val) temptheme.headerfont = fontlist[val] .. "LineFont" end,
+						set = function(info, val) temptheme.linefont = fontlist[val] .. "LineFont" end,
 					},
 					spacer3 = {
 						order = 5.5,
@@ -903,22 +982,81 @@ function MDH:OnInitialize()
 		},
 	}
 
-	--remove old renamed variables
-	MDH.db.profile.Name = nil
-	MDH.db.profile.Petname = nil
-	mainPanel.name = "Misdirection Helper 2"
-	InterfaceOptions_AddCategory(mainPanel)
-	AceConfig:RegisterOptionsTable("MisdirectionHelperOptions", optionsTable)
-	AceConfig:RegisterOptionsTable("MisdirectionHelperThemes", themesTable)
-	AceConfig:RegisterOptionsTable("MisdirectionHelperProfiles", AceDBOptions:GetOptionsTable(MDH.db))
-	MDH.optionsFrame = AceConfigDialog:AddToBlizOptions("MisdirectionHelperOptions", _G.MAIN_MENU, "Misdirection Helper 2")
-	AceConfigDialog:AddToBlizOptions("MisdirectionHelperThemes", L["Themes"], "Misdirection Helper 2")
-	AceConfigDialog:AddToBlizOptions("MisdirectionHelperProfiles", L["Profiles"], "Misdirection Helper 2")
-	MDH:CreateLDBObject()
-	if icon then icon:Register("MisdirectionHelper", MDH.dataObject, MDH.db.profile.minimap) end
-	if (GetNumSubgroupMembers() > 0) or (GetNumGroupMembers() > 0) or (UnitInRaid("player")) then MDH.ingroup = true end
-	MDH:MDHOnload()
+MDH.db.profile.Name = nil
+MDH.db.profile.Petname = nil
+
+-- Register options table using AceConfig
+AceConfig:RegisterOptionsTable("MisdirectionHelperOptions", optionsTable)
+AceConfig:RegisterOptionsTable("MisdirectionHelperThemes", themesTable)
+AceConfig:RegisterOptionsTable("MisdirectionHelperProfiles", AceDBOptions:GetOptionsTable(MDH.db))
+
+-- Create the main options panel frame
+local mainPanel = CreateFrame("Frame", "MisdirectionHelperOptionsPanel", UIParent)
+mainPanel.name = "Misdirection Helper 2"
+mainPanel:Hide()
+
+mainPanel.title = mainPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+mainPanel.title:SetPoint("TOPLEFT", 16, -16)
+mainPanel.title:SetText("Misdirection Helper 2")
+
+mainPanel.instructions = mainPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+mainPanel.instructions:SetPoint("TOPLEFT", mainPanel.title, "BOTTOMLEFT", 0, -8)
+mainPanel.instructions:SetWidth(300)
+mainPanel.instructions:SetJustifyH("LEFT")
+mainPanel.instructions:SetText("Here you can configure Misdirection Helper 2 to your liking.")
+
+-- Required functions for frames using Settings API
+mainPanel.OnCommit = function() end
+mainPanel.OnDefault = function() end
+mainPanel.OnRefresh = function() end
+
+-- Register the main panel using the Settings API if available
+if Settings then
+    local function RegisterOptionsPanel(panel)
+        local category = Settings.GetCategory(panel.name)
+        if not category then
+            category, layout = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
+            category.ID = panel.name
+            Settings.RegisterAddOnCategory(category)
+        end
+    end
+
+    RegisterOptionsPanel(mainPanel)
+	
+else
+    -- Fallback for older versions without the new Settings API
+    InterfaceOptions_AddCategory(mainPanel)
+	
 end
+
+-- Add options to Blizzard interface options
+AceConfigDialog:AddToBlizOptions("MisdirectionHelperOptions", L["Options"], "Misdirection Helper 2")
+AceConfigDialog:AddToBlizOptions("MisdirectionHelperThemes", L["Themes"], "Misdirection Helper 2")
+AceConfigDialog:AddToBlizOptions("MisdirectionHelperProfiles", L["Profiles"], "Misdirection Helper 2")
+
+-- Create LDB object
+MDH:CreateLDBObject()
+if icon then icon:Register("MisdirectionHelper", MDH.dataObject, MDH.db.profile.minimap) end
+if (GetNumSubgroupMembers() > 0) or (GetNumGroupMembers() > 0) or (UnitInRaid("player")) then MDH.ingroup = true end
+MDH:MDHOnload()
+end
+
+function MDH:ApplyTheme(themeName)
+    local theme = MDH.themes[themeName]
+    if not theme then return end
+
+    MDH.db.profile.headerfont = theme.headerfont
+   
+    MDH.db.profile.linefont = theme.linefont
+   
+    MDH:UpdateFonts()
+end
+
+function MDH:UpdateFonts()
+    -- Here you would need to implement the logic to update the actual UI elements with the new fonts
+    -- This function is a placeholder and should be expanded with the necessary code to apply the fonts to your UI elements
+end
+
 
 function MDH:OnEnable()
     -- Initialize fonts
@@ -929,18 +1067,26 @@ function MDH:OnEnable()
     MDH.fonts.MDHLineFont.font:SetFont(GameTooltipText:GetFont(), 12, "")
 
     local mdhfont = CreateFont("ElvFont")
-    if IsAddOnLoaded("Tukui") then
+    local loadedOrLoading, loaded
+
+    -- Check if Tukui is loaded
+    loadedOrLoading, loaded = C_AddOns.IsAddOnLoaded("Tukui")
+    if loaded then
         local T, C, L = unpack(Tukui)
         if C.Medias then
             mdhfont:SetFont(C.Medias.Font, 12, "")
         else
             mdhfont:SetFont(C.Media.font, 12, "")
         end
-    elseif IsAddOnLoaded("ElvUI") then
-        local E, L, V, P, G, DF = unpack(ElvUI)
-        mdhfont:SetFont(E["media"].normFont, 12, "")
     else
-        mdhfont:SetFont(GameTooltipText:GetFont(), 12, "")
+        -- Check if ElvUI is loaded
+        loadedOrLoading, loaded = C_AddOns.IsAddOnLoaded("ElvUI")
+        if loaded then
+            local E, L, V, P, G, DF = unpack(ElvUI)
+            mdhfont:SetFont(E["media"].normFont, 12, "")
+        else
+            mdhfont:SetFont(GameTooltipText:GetFont(), 12, "")
+        end
     end
 
     MDH.fonts.ElvUIHeaderFont = {font=mdhfont}
@@ -983,9 +1129,6 @@ function MDH:OnEnable()
     end
 end
 
-
-
-
 function MDH:MDHOnload()
 	MDH:RegisterEvent("PLAYER_ENTERING_WORLD")
 	MDH:RegisterEvent("UNIT_PET")
@@ -1019,7 +1162,7 @@ function MDH:ZONE_CHANGED_NEW_AREA()
 	local inInstance = (select(2, GetInstanceInfo()) ~= "none")
 	if UnitIsGhost("player") then return end
 	if inInstance then
-		if MDH.remind then --reminder already set, don't give another one
+		if MDH.remind then 
 		else
 			StaticPopup_Show("MDH_REMINDER")
 			MDH.remind = true
@@ -1075,7 +1218,7 @@ function MDH:UNIT_SPELLCAST_SUCCEEDED(event, unitid, spell, rank, ...)
 		for index, petcall in ipairs(callpet) do
 			if spell == petcall then
 				MDH.db.profile.petname = select(2, GetStablePetInfo(index))
-				--print(spell, MDH.db.profile.petname)
+				
 				MDH:MDHTextUpdate()
 				return
 			end
