@@ -16,15 +16,18 @@ end
 
 local function getSpellInfoFunction()
     if isWow11OrLater() then
-        return C_Spell.GetSpellInfo
+        return function(spellID)
+            return { name = (C_Spell.GetSpellInfo(spellID) or {}).name }
+        end
     else
-        return _G.GetSpellInfo
+        return function(spellID)
+            return { name = (GetSpellInfo(spellID)) }
+        end
     end
 end
 
 local GetSpellInfo = getSpellInfoFunction()
 
--- Ensure string function
 local function ensureString(value)
     if type(value) == "table" then
         return tostring(value)
@@ -95,20 +98,23 @@ local GameTooltipText, GameTooltipHeaderText = GameTooltipText, GameTooltipHeade
 
 local function set(info, value)
     local key = info[#info]
-	
+    
     if type(value) == "table" then
-        
         value = tostring(value)
     end
-    MDH.db.profile[key] = value
+    
+    if key == "theme" then
+        MDH.db.profile.theme = value
+        MDH:ApplyTheme(value)
+    else
+        MDH.db.profile[key] = value
+    end
 end
 
 local function get(info)
     local key = info[#info]
     local value = MDH.db.profile[key]
-    
     if type(value) == "table" then
-        
         value = tostring(value)
     end
     return value
@@ -143,8 +149,8 @@ local defaults = {
 }
 
 function MDH:MDHLoad()
-	if UnitExists("pet") then MDH:MDHgetpet() end
-	MDH:MDHEditMacro()
+    if UnitExists("pet") then MDH:MDHgetpet() end
+    MDH:MDHEditMacro()
 end
 
 function MDH:MDHEditMacro()
@@ -167,7 +173,7 @@ function MDH:MDHEditMacro()
     end
 
     modkey = modkeys[MDH.db.profile.modkey]
-   
+
     mname = ensureString(mname)
 
     MDH:MDHTextUpdate()
@@ -177,7 +183,7 @@ function MDH:MDHEditMacro()
 
     local target = ensureString(MDH.db.profile.target or "target")
     local target2 = ensureString(MDH.db.profile.target2 or "target")
-   
+
     if MDH.db.profile.target2 then
         macro = format(multiplemacro, target, target2, spell.name, spell.name)
     else
@@ -193,19 +199,19 @@ function MDH:MDHEditMacro()
 end
 
 function MDH:MDHChat()
-	if IsAddOnLoaded("CastYeller2") or IsAddOnLoaded("CastYeller") then return end
-	local chan = MDH.db.profile.cChannel or "RAID"
-	local s
-	local spelllink = (uc == "HUNTER") and GetSpellLink(35079) or GetSpellLink(57934)
-	local msg = format(L["%s casts %s on %s"], UnitName("player"), spelllink, misdtarget)
+    if IsAddOnLoaded("CastYeller2") or IsAddOnLoaded("CastYeller") then return end
+    local chan = MDH.db.profile.cChannel or "RAID"
+    local s
+    local spelllink = (uc == "HUNTER") and GetSpellLink(35079) or GetSpellLink(57934)
+    local msg = format(L["%s casts %s on %s"], UnitName("player"), spelllink, misdtarget)
 
-	if chan == "PARTY" and GetNumSubgroupMembers() ~= 0 then
-		if (IsInGroup(_G.LE_PARTY_CATEGORY_INSTANCE)) then chan = "INSTANCE_CHAT" end
-		s = true
+    if chan == "PARTY" and GetNumSubgroupMembers() ~= 0 then
+        if (IsInGroup(_G.LE_PARTY_CATEGORY_INSTANCE)) then chan = "INSTANCE_CHAT" end
+        s = true
 
-	elseif chan == "RAID" and IsInRaid() then s = true
-	elseif chan == "WHISPER" then if UnitIsPlayer(misdtarget) then s = true end end
-	if s then SendChatMessage(msg, chan, nil, misdtarget) end
+    elseif chan == "RAID" and IsInRaid() then s = true
+    elseif chan == "WHISPER" then if UnitIsPlayer(misdtarget) then s = true end end
+    if s then SendChatMessage(msg, chan, nil, misdtarget) end
 end
 
 local function createMainPanel()
@@ -228,6 +234,7 @@ local function createMainPanel()
     return frame
 end
 
+--************ THEMES ************
 local themelist, customlist
 local fontlist = {[1] = "MDH", [2] = "Arial Narrow", [3] = "Morpheus", [4] = "Skurri"}
 local tmpcopy, tempname, tempdata
@@ -239,24 +246,24 @@ MDH.themes = {
     ["Dark"] = {
         headerfont = "Friz Quadrata TT",
         linefont = "Arial Narrow",
-        title = {0.1, 0.1, 0.1, 1, "ffFFFFFF"}, 
-        spacer = {1, 1, 1, 1}, 
-        group1 = {0.1, 0.1, 0.1, 1}, 
-        group2 = {0.1, 0.1, 0.1, 1}, 
-        group3 = {0.1, 0.1, 0.1, 1}, 
-        group4 = {0.1, 0.1, 0.1, 1, "ffFFFFFF", "ffBBBBBB"}, 
-        group5 = {0.1, 0.1, 0.1, 1, "ffFFFFFF"} 
+        title = {0.1, 0.1, 0.1, 1, "ffFFFFFF"},
+        spacer = {1, 1, 1, 1},
+        group1 = {0.1, 0.1, 0.1, 1},
+        group2 = {0.1, 0.1, 0.1, 1},
+        group3 = {0.1, 0.1, 0.1, 1},
+        group4 = {0.1, 0.1, 0.1, 1, "ffFFFFFF", "ffBBBBBB"},
+        group5 = {0.1, 0.1, 0.1, 1, "ffFFFFFF"}
     },
     ["Vibrant"] = {
         headerfont = "Morpheus",
         linefont = "Skurri",
-        title = {0.9, 0.2, 0.2, 1, "ff000000"}, 
-        spacer = {0.2, 0.9, 0.2, 1}, 
-        group1 = {0.2, 0.2, 0.9, 1}, 
-        group2 = {0.9, 0.9, 0.2, 1}, 
-        group3 = {0.9, 0.2, 0.9, 1}, 
-        group4 = {0.2, 0.9, 0.9, 1, "ff000000", "ff000000"}, 
-        group5 = {0.9, 0.4, 0.2, 1, "ff000000"} 
+        title = {0.9, 0.2, 0.2, 1, "ff000000"},
+        spacer = {0.2, 0.9, 0.2, 1},
+        group1 = {0.2, 0.2, 0.9, 1},
+        group2 = {0.9, 0.9, 0.2, 1},
+        group3 = {0.9, 0.2, 0.9, 1},
+        group4 = {0.2, 0.9, 0.9, 1, "ff000000", "ff000000"},
+        group5 = {0.9, 0.4, 0.2, 1, "ff000000"}
     },
     ["Ocean Breeze"] = {
         headerfont = "Skurri",
@@ -357,17 +364,6 @@ MDH.themes = {
         group4 = {0.1, 0.9, 0.9, 1, "ff000000", "ff333333"},
         group5 = {0.1, 0.8, 0.8, 1, "ff000000"}
     },
-    ["Candy Pop"] = {
-        headerfont = "Skurri",
-        linefont = "Arial Narrow",
-        title = {0.9, 0.6, 0.6, 1, "ff000000"},
-        spacer = {0.9, 0.9, 0.2, 1},
-        group1 = {0.8, 0.4, 0.9, 1},
-        group2 = {0.9, 0.6, 0.6, 1},
-        group3 = {0.8, 0.4, 0.9, 1},
-        group4 = {0.9, 0.9, 0.2, 1, "ff000000", "ff333333"},
-        group5 = {0.8, 0.4, 0.9, 1, "ff000000"}
-    },
     ["Electric Blue"] = {
         headerfont = "Morpheus",
         linefont = "Friz Quadrata TT",
@@ -411,11 +407,73 @@ MDH.themes = {
         group3 = {0.9, 0.9, 0.2, 1},
         group4 = {0.9, 0.9, 0.4, 1, "ff000000", "ff333333"},
         group5 = {0.9, 0.9, 0.2, 1, "ff000000"}
-    }
+    },
+["Retro Wave"] = {
+    headerfont = "Morpheus",
+    linefont = "Skurri",
+    title = {0.5, 0.2, 0.8, 1, "ff00FF00"},
+    spacer = {0.1, 0.1, 0.1, 1},
+    group1 = {0.5, 0.2, 0.8, 1},
+    group2 = {0.3, 0.3, 0.3, 1},
+    group3 = {0.5, 0.2, 0.8, 1},
+    group4 = {0.3, 0.3, 0.3, 1, "ff00FF00", "ffFF00FF"},
+    group5 = {0.5, 0.2, 0.8, 1, "ff00FF00"}
+},
+
+["Desert Mirage"] = {
+    headerfont = "Friz Quadrata TT",
+    linefont = "Arial Narrow",
+    title = {0.9, 0.6, 0.3, 1, "ff000000"},
+    spacer = {0.8, 0.7, 0.5, 1},
+    group1 = {0.9, 0.6, 0.3, 1},
+    group2 = {0.8, 0.7, 0.5, 1},
+    group3 = {0.9, 0.6, 0.3, 1},
+    group4 = {0.8, 0.7, 0.5, 1, "ff000000", "ff333333"},
+    group5 = {0.9, 0.6, 0.3, 1, "ff000000"}
+},
+["Ice Queen"] = {
+    headerfont = "Arial Narrow",
+    linefont = "Friz Quadrata TT",
+    title = {0.6, 0.8, 1, 1, "ffFFFFFF"},
+    spacer = {0.4, 0.6, 0.8, 1},
+    group1 = {0.6, 0.8, 1, 1},
+    group2 = {0.4, 0.6, 0.8, 1},
+    group3 = {0.6, 0.8, 1, 1},
+    group4 = {0.4, 0.6, 0.8, 1, "ffFFFFFF", "ffAAAAAA"},
+    group5 = {0.6, 0.8, 1, 1, "ffFFFFFF"}
+},
+
+["Sunflower"] = {
+    headerfont = "Morpheus",
+    linefont = "Arial Narrow",
+    title = {0.9, 0.8, 0.2, 1, "ff000000"},
+    spacer = {0.9, 0.8, 0.2, 1},
+    group1 = {0.9, 0.8, 0.2, 1},
+    group2 = {0.9, 0.8, 0.2, 1},
+    group3 = {0.9, 0.8, 0.2, 1},
+    group4 = {0.9, 0.8, 0.2, 1, "ff000000", "ff444444"},
+    group5 = {0.9, 0.8, 0.2, 1, "ff000000"}
+},
+
+["Midnight Dream"] = {
+    headerfont = "Friz Quadrata TT",
+    linefont = "Skurri",
+    title = {0.2, 0.2, 0.5, 1, "ffDDDDDD"},
+    spacer = {0.1, 0.1, 0.3, 1},
+    group1 = {0.2, 0.2, 0.5, 1},
+    group2 = {0.1, 0.1, 0.3, 1},
+    group3 = {0.2, 0.2, 0.5, 1},
+    group4 = {0.1, 0.1, 0.3, 1, "ffDDDDDD", "ffAAAAAA"},
+    group5 = {0.2, 0.2, 0.5, 1, "ffDDDDDD"}
+ },
 }
+
 
 local function GetTTFont(font)
     local pos = string.find(font, "Header") or string.find(font, "Line")
+    if not pos then
+        return nil 
+    end
     local name = string.sub(font, 1, pos - 1)
     local fpos
     for k, v in pairs(fontlist) do
@@ -430,10 +488,10 @@ end
 function MDH:MDHTextUpdate() MDH.dataObject.text = MDH:TTText("both") end
 
 local function stringify(array)
-	local out = ""
-	for _, v in ipairs(array) do out = out .. v .. ";" end
-	out = string.sub(out, 1, string.len(out) - 1)
-	return out
+    local out = ""
+    for _, v in ipairs(array) do out = out .. v .. ";" end
+    out = string.sub(out, 1, string.len(out) - 1)
+    return out
 end
 
 local function encodeTheme(theme)
@@ -475,24 +533,31 @@ function MDH:decodeTheme(encoded)
 end
 
 local function validateThemeName(info, value)
-	local out
-	local val = MDH:trim(value or "")
-	if val == "" then out = L["Please enter a valid theme name"] end
-	if MDH.themes[value] then out = L["Theme name already in use"] end
-	if out then MDH:ShowError(out); tempname = nil end
-	return out or true
+    local out
+    local val = MDH:trim(value or "")
+    if val == "" then out = L["Please enter a valid theme name"] end
+    if MDH.themes[value] then out = L["Theme name already in use"] end
+    if out then MDH:ShowError(out); tempname = nil end
+    return out or true
 end
 
 local function updateThemeList()
     themelist, customlist = {}, {}
-    for k in pairs(MDH.themes) do themelist[k] = k end
-    for k in pairs(MDH.db.global.custom) do customlist[k] = k end
+    for k, v in pairs(MDH.themes) do 
+        themelist[k] = k 
+    end
+    for k, v in pairs(MDH.db.global.custom) do
+        local editedName = k .. " (edited)"
+        customlist[editedName] = editedName
+        themelist[editedName] = editedName
+    end
 end
 
 local function saveTheme()
     if type(validateThemeName(nil, tempname)) ~= "boolean" then return end
     MDH.db.global.custom[tempname] = temptheme
-    MDH.themes[tempname] = temptheme
+    local editedName = tempname .. " (edited)"
+    MDH.themes[editedName] = temptheme
     updateThemeList()
     tempname = nil
     tempdata = nil
@@ -500,17 +565,23 @@ local function saveTheme()
 end
 
 local function editTheme()
-    MDH.db.global.custom[tempname] = temptheme
-    MDH.themes[tempname] = temptheme
+    local actualName = tempname:gsub(" %(edited%)", "")
+    MDH.db.global.custom[actualName] = temptheme
+    local editedName = actualName .. " (edited)"
+    MDH.themes[editedName] = temptheme
+    updateThemeList()
     tempname = nil
     MDH:ShowError(L["Theme saved"])
 end
 
 local function deleteTheme()
     if not tempname then MDH:ShowError(L["Please enter a valid theme name"]); return end
-    if MDH.db.profile.theme == tempname then MDH.db.profile.theme = _G.DEFAULT end
-    MDH.db.global.custom[tempname] = nil
-    MDH.themes[tempname] = nil
+    local actualName = tempname:gsub(" %(edited%)", "")
+    if MDH.db.profile.theme == actualName .. " (edited)" then 
+        MDH.db.profile.theme = _G.DEFAULT 
+    end
+    MDH.db.global.custom[actualName] = nil
+    MDH.themes[actualName .. " (edited)"] = nil
     updateThemeList()
     tempname = nil
     MDH:ShowError(L["Theme deleted"])
@@ -522,652 +593,679 @@ local function checkThemes()
 end
 
 function MDH:OnInitialize()
-	local AceConfig = LibStub("AceConfig-3.0")
-	local AceConfigDialog = LibStub("AceConfigDialog-3.0")
-	local AceDBOptions = LibStub("AceDBOptions-3.0")
-	local mainPanel = createMainPanel()
-	local optionsTable, themesTable
-	local k, v
-	
-	self.db = AceDB:New("MisdirectionHelperDB", defaults, true)
+    local AceConfig = LibStub("AceConfig-3.0")
+    local AceConfigDialog = LibStub("AceConfigDialog-3.0")
+    local AceDBOptions = LibStub("AceDBOptions-3.0")
+    local mainPanel = createMainPanel()
+    local optionsTable, themesTable
+    local k, v
+    
+    self.db = AceDB:New("MisdirectionHelperDB", defaults, true)
+    MDH.db = LibStub("AceDB-3.0"):New("MisDirectionHelperDB", defaults)
+    optionsTable = {
+        type = "group",
+        name = _G.MAIN_MENU,
+        inline = false,
+        args = {
+            showMinimapIcon = {
+                order = 1,
+                type = "toggle",
+                width = "full",
+                name = L["Minimap Icon"],
+                desc = L["Toggle Minimap icon"],
+                get = function() return not MDH.db.profile.minimap.hide end,
+                set = function(info, value)
+                    MDH.db.profile.minimap.hide = not value
+                    if value then icon:Show("MisdirectionHelper")
+                    else icon:Hide("MisdirectionHelper") end
+                end,
+            },
+            clearleave = {
+                order = 2,
+                type = "toggle",
+                width = "full",
+                name = L["Clear when joining group"],
+                desc = L["Clear both targets when joining a raid / party"],
+                get = function() return MDH.db.profile.clearjoin end,
+                set = function(info, value)
+                    MDH.db.profile.clearjoin = value
+                    if value then MDH:RegisterEvent("GROUP_ROSTER_UPDATE")
+                    else MDH:UnregisterEvent("GROUP_ROSTER_UPDATE") end
+                end,
+            },
+            autotank = {
+                order = 2,
+                type = "toggle",
+                width = "full",
+                name = L["Set to tank when joining party"],
+                desc = L["Set the target to the main tank when joining a party. May not pick the right character if roles have not been set."],
+                get = function() return MDH.db.profile.autotank end,
+                set = function(info, value)
+                    MDH.db.profile.autotank = value
+                    if value then MDH:RegisterEvent("GROUP_ROSTER_UPDATE")
+                    else MDH:UnregisterEvent("GROUP_ROSTER_UPDATE") end
+                end,
+            },
+            autopet = {
+                order = 3,
+                type = "toggle",
+                width = "full",
+                name = L["Set to pet when leaving party"],
+                desc = L["Set the target to your pet when leaving a party"],
+                get = function() return MDH.db.profile.autopet end,
+                set = function(info, value)
+                    MDH.db.profile.autopet = value
+                    if value then MDH:RegisterEvent("GROUP_ROSTER_UPDATE")
+                    else MDH:UnregisterEvent("GROUP_ROSTER_UPDATE") end
+                end,
+            },
+            remind = {
+                order = 4,
+                type = "toggle",
+                width = "full",
+                name = L["Show reminder"],
+                desc = L["Display a reminder to set targets on entering an instance / raid"],
+                get = function() return MDH.db.profile.remind end,
+                set = function(info, value)
+                    MDH.db.profile.remind = value
+                    if value then MDH:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+                    else MDH:UnregisterEvent("ZONE_CHANGED_NEW_AREA") end
+                end,
+            },
+            buffmessage = {
+                order = 5,
+                type = "toggle",
+                name = L["Buff Alert"],
+                desc = L["Toggle Misdirection Applied Announcement"],
+                get = function() return MDH.db.profile.bAnnounce end,
+                set = function(info, value) MDH.db.profile.bAnnounce = value end,
+            },
+            cChannel = {
+                type = "select",
+                name = L["Buff Channel"],
+                desc = L["Select Channel for Buff Announcements"],
+                hidden = function() return not MDH.db.profile.bAnnounce end,
+                order = 6,
+                get = function() return MDH.db.profile.cChannel end,
+                set = function(info, value) MDH.db.profile.cChannel = value end,
+                values = channels,
+            },
+            spacer1 = {
+                order = 7,
+                type = "description",
+                name = "\n",
+            },
+            hicon = {
+                type = "select",
+                name = L["Misdirection macro icon"],
+                order = 8,
+                hidden = function() return uc == "ROGUE" end,
+                get = function() return MDH.db.profile.hicon or hiconinfo[imd.name][2] end,
+                set = function(info, value)
+                    MDH.db.profile.hicon = value
+                    MDH:MDHEditMacro()
+                end,
+                values = hicons,
+            },
+            ricon = {
+                type = "select",
+                name = L["Tricks of the Trade macro icon"],
+                order = 9,
+                hidden = function() return uc == "HUNTER" end,
+                get = function() return MDH.db.profile.ricon or riconinfo[itt.name][2] end,
+                set = function(info, value)
+                    MDH.db.profile.ricon = value
+                    MDH:MDHEditMacro()
+                end,
+                values = ricons,
+            },
+            bkey = {
+                type = "select",
+                name = L["Macro bypass key"],
+                order = 10,
+                get = function() return MDH.db.profile.modkey end,
+                set = function(info, value)
+                    MDH.db.profile.modkey = value
+                    MDH:MDHEditMacro()
+                end,
+                values = modopts,
+            },
+            hmname = {
+                type = "input",
+                name = L["Macro name"],
+                width = "double",
+                order = 11,
+                desc = L["Name to use for the macro"],
+                get = function() return MDH.db.profile.hname end,
+                set = function(info, value)
+                    MDH.db.profile.hname = value
+                    MDH:MDHEditMacro()
+                end,
+                hidden = function() return uc == "ROGUE" end,
+            },
+            rmname = {
+                type = "input",
+                name = L["Macro name"],
+                desc = L["Name to use for the macro"],
+                order = 12,
+                width = "double",
+                get = function() return MDH.db.profile.rname end,
+                set = function(info, value)
+                    MDH.db.profile.rname = value
+                    MDH:MDHEditMacro()
+                end,
+                hidden = function() return uc == "HUNTER" end,
+            },
+        },
+    }
 
-	MDH.db = LibStub("AceDB-3.0"):New("MisDirectionHelperDB", defaults)
-optionsTable = {
-	type = "group",
-	name = _G.MAIN_MENU,
-	inline = false,
-	args = {
-		showMinimapIcon = {
-			order = 1,
-			type = "toggle",
-			width = "full",
-			name = L["Minimap Icon"],
-			desc = L["Toggle Minimap icon"],
-			get = function() return not MDH.db.profile.minimap.hide end,
-			set = function(info, value)
-				MDH.db.profile.minimap.hide = not value
-				if value then icon:Show("MisdirectionHelper")
-				else icon:Hide("MisdirectionHelper") end
-			end,
-		},
-		clearleave = {
-			order = 2,
-			type = "toggle",
-			width = "full",
-			name = L["Clear when joining group"],
-			desc = L["Clear both targets when joining a raid / party"],
-			get = function() return MDH.db.profile.clearjoin end,
-			set = function(info, value)
-				MDH.db.profile.clearjoin = value
-				if value then MDH:RegisterEvent("GROUP_ROSTER_UPDATE")
-				else MDH:UnregisterEvent("GROUP_ROSTER_UPDATE") end
-			end,
-		},
-		autotank = {
-			order = 2,
-			type = "toggle",
-			width = "full",
-			name = L["Set to tank when joining party"],
-			desc = L["Set the target to the main tank when joining a party. May not pick the right character if roles have not been set."],
-			get = function() return MDH.db.profile.autotank end,
-			set = function(info, value)
-				MDH.db.profile.autotank = value
-				if value then MDH:RegisterEvent("GROUP_ROSTER_UPDATE")
-				else MDH:UnregisterEvent("GROUP_ROSTER_UPDATE") end
-			end,
-		},
-		autopet = {
-			order = 3,
-			type = "toggle",
-			width = "full",
-			name = L["Set to pet when leaving party"],
-			desc = L["Set the target to your pet when leaving a party"],
-			get = function() return MDH.db.profile.autopet end,
-			set = function(info, value)
-				MDH.db.profile.autopet = value
-				if value then MDH:RegisterEvent("GROUP_ROSTER_UPDATE")
-				else MDH:UnregisterEvent("GROUP_ROSTER_UPDATE") end
-			end,
-		},
-		remind = {
-			order = 4,
-			type = "toggle",
-			width = "full",
-			name = L["Show reminder"],
-			desc = L["Display a reminder to set targets on entering an instance / raid"],
-			get = function() return MDH.db.profile.remind end,
-			set = function(info, value)
-				MDH.db.profile.remind = value
-				if value then MDH:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-				else MDH:UnregisterEvent("ZONE_CHANGED_NEW_AREA") end
-			end,
-		},
-		buffmessage = {
-			order = 5,
-			type = "toggle",
-			name = L["Buff Alert"],
-			desc = L["Toggle Misdirection Applied Announcement"],
-			get = function() return MDH.db.profile.bAnnounce end,
-			set = function(info, value) MDH.db.profile.bAnnounce = value end,
-		},
-		cChannel = {
-			type = "select",
-			name = L["Buff Channel"],
-			desc = L["Select Channel for Buff Announcements"],
-			hidden = function() return not MDH.db.profile.bAnnounce end,
-			order = 6,
-			get = function() return MDH.db.profile.cChannel end,
-			set = function(info, value) MDH.db.profile.cChannel = value end,
-			values = channels,
-		},
-		spacer1 = {
-			order = 7,
-			type = "description",
-			name = "\n",
-		},
-		hicon = {
-			type = "select",
-			name = L["Misdirection macro icon"],
-			order = 8,
-			hidden = function() return uc == "ROGUE" end,
-			get = function() return MDH.db.profile.hicon or hiconinfo[imd.name][2] end,
-			set = function(info, value)
-				MDH.db.profile.hicon = value
-				MDH:MDHEditMacro()
-			end,
-			values = hicons,
-		},
-		ricon = {
-			type = "select",
-			name = L["Tricks of the Trade macro icon"],
-			order = 9,
-			hidden = function() return uc == "HUNTER" end,
-			get = function() return MDH.db.profile.ricon or riconinfo[itt.name][2] end,
-			set = function(info, value)
-				MDH.db.profile.ricon = value
-				MDH:MDHEditMacro()
-			end,
-			values = ricons,
-		},
-		bkey = {
-			type = "select",
-			name = L["Macro bypass key"],
-			order = 10,
-			get = function() return MDH.db.profile.modkey end,
-			set = function(info, value)
-				MDH.db.profile.modkey = value
-				MDH:MDHEditMacro()
-			end,
-			values = modopts,
-		},
-		hmname = {
-			type = "input",
-			name = L["Macro name"],
-			width = "double",
-			order = 11,
-			desc = L["Name to use for the macro"],
-			get = function() return MDH.db.profile.hname end,
-			set = function(info, value)
-				MDH.db.profile.hname = value
-				MDH:MDHEditMacro()
-			end,
-			hidden = function() return uc == "ROGUE" end,
-		},
-		rmname = {
-			type = "input",
-			name = L["Macro name"],
-			desc = L["Name to use for the macro"],
-			order = 12,
-			width = "double",
-			get = function() return MDH.db.profile.rname end,
-			set = function(info, value)
-				MDH.db.profile.rname = value
-				MDH:MDHEditMacro()
-			end,
-			hidden = function() return uc == "HUNTER" end,
-		},
-	},
-}
+    themesTable = {
+        type = "group",
+        name = L["Themes"],
+        inline = false,
+        args = {
+            selecttheme = {
+                order = 1,
+                type = "group",
+                name = L["Select"],
+                inline = false,
+                args = {
+                    selection = {
+                        order = 1,
+                        type = "select",
+                        name = L["Select"],
+                        get = function() return MDH.db.profile.theme or themelist[1] end,
+                        set = function(info, value)
+                            MDH.db.profile.theme = value
+                            MDH:ApplyTheme(value)
+                        end,
+                        values = function() return themelist end,
+                    },
+                },
+            },
+            createtheme = {
+                order = 2,
+                type = "group",
+                name = _G.BATTLETAG_CREATE,
+                inline = false,
+                args = {
+                    themename = {
+                        order = 1,
+                        type = "input",
+                        name = L["Theme name"],
+                        get = function() return tempname end,
+                        set = function(info, value) tempname = value end,
+                        validate = validateThemeName,
+                    },
+                    themecopy = {
+                        order = 1.5,
+                        type = "select",
+                        name = L["Copy theme"],
+                        get = function() return tmpcopy end,
+                        set = function(info, value)
+                            temptheme = MDH:deepcopy(MDH.themes[value])
+                            tmpcopy = value
+                        end,
+                        values = function() return themelist end,
+                    },
+                    spacer1 = {
+                        order = 2,
+                        type = "description",
+                        width = "full",
+                        name = "",
+                    },
+                    header1 = {
+                        order = 3,
+                        type = "header",
+                        name = L["Fonts"],
+                    },
+                    headerfont = {
+                        order = 4,
+                        type = "select",
+                        name = L["Header font"],
+                        values = fontlist,
+                        get = function() return GetTTFont(temptheme.headerfont) end,
+                        set = function(info, val) temptheme.headerfont = fontlist[val] .. "HeaderFont" end,
+                    },
+                    spacer2 = {
+                        order = 4.5,
+                        type = "description",
+                        width = "full",
+                        name = "",
+                    },
+                    linefont = {
+                        order = 5,
+                        type = "select",
+                        name = L["Line font"],
+                        values = fontlist,
+                        get = function() return GetTTFont(temptheme.linefont) end,
+                        set = function(info, val) temptheme.linefont = fontlist[val] .. "LineFont" end,
+                    },
+                    spacer3 = {
+                        order = 5.5,
+                        type = "description",
+                        width = "full",
+                        name = "",
+                    },
+                    header2 = {
+                        order = 6,
+                        type = "header",
+                        name = _G.BACKGROUND,
+                    },
+                    title = {
+                        order = 6.5,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Header"],
+                        get = function() return temptheme.title[1], temptheme.title[2], temptheme.title[3], temptheme.title[4] end,
+                        set = function(info, r, g, b, a) temptheme.title[1] = r; temptheme.title[2] = g; temptheme.title[3] = b; temptheme.title[4] = a end,
+                    },
+                    group1 = {
+                        order = 7,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["'Set' options"],
+                        get = function() return temptheme.group1[1], temptheme.group1[2], temptheme.group1[3], temptheme.group1[4] end,
+                        set = function(info, r, g, b, a) temptheme.group1[1] = r; temptheme.group1[2] = g; temptheme.group1[3] = b; temptheme.group1[4] = a end,
+                    },
+                    group2 = {
+                        order = 8,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Enter Player Name"],
+                        get = function() return temptheme.group2[1], temptheme.group2[2], temptheme.group2[3], temptheme.group2[4] end,
+                        set = function(info, r, g, b, a) temptheme.group2[1] = r; temptheme.group2[2] = g; temptheme.group2[3] = b; temptheme.group2[4] = a end,
+                    },
+                    group3 = {
+                        order = 9,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Clear Target"],
+                        get = function() return temptheme.group3[1], temptheme.group3[2], temptheme.group3[3], temptheme.group3[4] end,
+                        set = function(info, r, g, b, a) temptheme.group3[1] = r; temptheme.group3[2] = g; temptheme.group3[3] = b; temptheme.group3[4] = a end,
+                    },
+                    group4 = {
+                        order = 11,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Left/Right Click"],
+                        get = function() return temptheme.group4[1], temptheme.group4[2], temptheme.group4[3], temptheme.group4[4] end,
+                        set = function(info, r, g, b, a) temptheme.group4[1] = r; temptheme.group4[2] = g; temptheme.group4[3] = b; temptheme.group4[4] = a end,
+                    },
+                    group5 = {
+                        order = 12,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Information"],
+                        get = function() return temptheme.group5[1], temptheme.group5[2], temptheme.group5[3], temptheme.group5[4] end,
+                        set = function(info, r, g, b, a) temptheme.group5[1] = r; temptheme.group5[2] = g; temptheme.group5[3] = b; temptheme.group5[4] = a end,
+                    },
+                    header3 = {
+                        order = 13,
+                        type = "header",
+                        name = L["Text"],
+                    },
+                    title1text = {
+                        order = 14,
+                        type = "color",
+                        name = L["Header"],
+                        get = function() return MDH:HexToRGBA(temptheme.title[5]) end,
+                        set = function(info, r, g, b, a) temptheme.title[5] = MDH:RGBAToHex(r, g, b, a) end,
+                    },
+                    group4text = {
+                        order = 15,
+                        type = "color",
+                        name = L["Left/Right Click"],
+                        get = function() return MDH:HexToRGBA(temptheme.group4[5]) end,
+                        set = function(info, r, g, b, a) temptheme.group4[5] = MDH:RGBAToHex(r, g, b, a) end,
+                    },
+                    group4target = {
+                        order = 16,
+                        type = "color",
+                        name = L["Left/Right Click target"],
+                        get = function() return MDH:HexToRGBA(temptheme.group4[6]) end,
+                        set = function(info, r, g, b, a) temptheme.group4[6] = MDH:RGBAToHex(r, g, b, a) end,
+                    },
+                    group5text = {
+                        order = 17,
+                        type = "color",
+                        name = L["Information"],
+                        get = function() return MDH:HexToRGBA(temptheme.group5[5]) end,
+                        set = function(info, r, g, b, a) temptheme.group5[5] = MDH:RGBAToHex(r, g, b, a) end,
+                    },
+                    header3 = {
+                        order = 17.1,
+                        type = "header",
+                        name = L["Dividers"],
+                    },
+                    divider = {
+                        order = 17.2,
+                        type = "color",
+                        name = L["Dividers"],
+                        get = function() return temptheme.spacer[1], temptheme.spacer[2], temptheme.spacer[3], temptheme.spacer[4] end,
+                        set = function(info, r, g, b, a) temptheme.spacer[1] = r; temptheme.spacer[2] = g; temptheme.spacer[3] = b; temptheme.spacer[4] = a end,
+                    },
+                    spacer3 = {
+                        order = 17.5,
+                        type = "description",
+                        width = "full",
+                        name = "\n",
+                    },
+                    savebutton = {
+                        order= 18,
+                        type = "execute",
+                        name = _G.SAVE,
+                        disabled = function() return tempname == nil end,
+                        func = saveTheme,
+                    },
+                },
+            },
+            edittheme = {
+                order = 3,
+                type = "group",
+                name = L["Edit"],
+                inline = false,
+                args = {
+                    themename = {
+                        order = 1,
+                        type = "select",
+                        name = L["Select"],
+                        get = function() return tempname end,
+                        set = function(info, value) 
+                            tempname = value 
+                            local actualName = value:gsub(" %(edited%)", "")
+                            temptheme = MDH:deepcopy(MDH.themes[actualName] or MDH.db.global.custom[actualName])
+                        end,
+                        values = function() return themelist end,
+                    },
+                    spacer1 = {
+                        order = 2,
+                        type = "description",
+                        width = "full",
+                        name = "",
+                    },
+                    header1 = {
+                        order = 3,
+                        type = "header",
+                        name = L["Fonts"],
+                        hidden = function() return tempname == nil end,
+                    },
+                    headerfont = {
+                        order = 4,
+                        type = "select",
+                        name = L["Header font"],
+                        values = fontlist,
+                        hidden = function() return tempname == nil end,
+                        get = function() return GetTTFont(temptheme.headerfont) end,
+                        set = function(info, val) temptheme.headerfont = fontlist[val] .. "HeaderFont" end,
+                    },
+                    spacer2 = {
+                        order = 4.5,
+                        type = "description",
+                        width = "full",
+                        name = "",
+                    },
+                    linefont = {
+                        order = 5,
+                        type = "select",
+                        name = L["Line font"],
+                        values = fontlist,
+                        hidden = function() return tempname == nil end,
+                        get = function() return GetTTFont(temptheme.linefont) end,
+                        set = function(info, val) temptheme.linefont = fontlist[val] .. "LineFont" end,
+                    },
+                    spacer3 = {
+                        order = 5.5,
+                        type = "description",
+                        width = "full",
+                        name = "",
+                    },
+                    header2 = {
+                        order = 6,
+                        type = "header",
+                        name = _G.BACKGROUND,
+                        hidden = function() return tempname == nil end,
+                    },
+                    title = {
+                        order = 6.5,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Header"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return temptheme.title[1], temptheme.title[2], temptheme.title[3], temptheme.title[4] end,
+                        set = function(info, r, g, b, a) temptheme.title[1] = r; temptheme.title[2] = g; temptheme.title[3] = b; temptheme.title[4] = a end,
+                    },
+                    group1 = {
+                        order = 7,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["'Set' options"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return temptheme.group1[1], temptheme.group1[2], temptheme.group1[3], temptheme.group1[4] end,
+                        set = function(info, r, g, b, a) temptheme.group1[1] = r; temptheme.group1[2] = g; temptheme.group1[3] = b; temptheme.group1[4] = a end,
+                    },
+                    group2 = {
+                        order = 8,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Enter Player Name"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return temptheme.group2[1], temptheme.group2[2], temptheme.group2[3], temptheme.group2[4] end,
+                        set = function(info, r, g, b, a) temptheme.group2[1] = r; temptheme.group2[2] = g; temptheme.group2[3] = b; temptheme.group2[4] = a end,
+                    },
+                    group3 = {
+                        order = 9,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Clear Target"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return temptheme.group3[1], temptheme.group3[2], temptheme.group3[3], temptheme.group3[4] end,
+                        set = function(info, r, g, b, a) temptheme.group3[1] = r; temptheme.group3[2] = g; temptheme.group3[3] = b; temptheme.group3[4] = a end,
+                    },
+                    group4 = {
+                        order = 11,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Left/Right Click"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return temptheme.group4[1], temptheme.group4[2], temptheme.group4[3], temptheme.group4[4] end,
+                        set = function(info, r, g, b, a) temptheme.group4[1] = r; temptheme.group4[2] = g; temptheme.group4[3] = b; temptheme.group4[4] = a end,
+                    },
+                    group5 = {
+                        order = 12,
+                        type = "color",
+                        hasAlpha = true,
+                        name = L["Information"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return temptheme.group5[1], temptheme.group5[2], temptheme.group5[3], temptheme.group5[4] end,
+                        set = function(info, r, g, b, a) temptheme.group5[1] = r; temptheme.group5[2] = g; temptheme.group5[3] = b; temptheme.group5[4] = a end,
+                    },
+                    header3 = {
+                        order = 13,
+                        type = "header",
+                        name = L["Text"],
+                        hidden = function() return tempname == nil end,
+                    },
+                    title1text = {
+                        order = 14,
+                        type = "color",
+                        name = L["Header"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return MDH:HexToRGBA(temptheme.title[5]) end,
+                        set = function(info, r, g, b, a) temptheme.title[5] = MDH:RGBAToHex(r, g, b, a) end,
+                    },
+                    group4text = {
+                        order = 15,
+                        type = "color",
+                        name = L["Left/Right Click"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return MDH:HexToRGBA(temptheme.group4[5]) end,
+                        set = function(info, r, g, b, a) temptheme.group4[5] = MDH:RGBAToHex(r, g, b, a) end,
+                    },
+                    group4target = {
+                        order = 16,
+                        type = "color",
+                        name = L["Left/Right Click target"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return MDH:HexToRGBA(temptheme.group4[6]) end,
+                        set = function(info, r, g, b, a) temptheme.group4[6] = MDH:RGBAToHex(r, g, b, a) end,
+                    },
+                    group5text = {
+                        order = 17,
+                        type = "color",
+                        name = L["Information"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return MDH:HexToRGBA(temptheme.group5[5]) end,
+                        set = function(info, r, g, b, a) temptheme.group5[5] = MDH:RGBAToHex(r, g, b, a) end,
+                    },
+                    header3 = {
+                        order = 17.1,
+                        type = "header",
+                        name = L["Dividers"],
+                        hidden = function() return tempname == nil end,
+                    },
+                    divider = {
+                        order = 17.2,
+                        type = "color",
+                        name = L["Dividers"],
+                        hidden = function() return tempname == nil end,
+                        get = function() return temptheme.spacer[1], temptheme.spacer[2], temptheme.spacer[3], temptheme.spacer[4] end,
+                        set = function(info, r, g, b, a) temptheme.spacer[1] = r; temptheme.spacer[2] = g; temptheme.spacer[3] = b; temptheme.spacer[4] = a end,
+                    },
+                    spacer3 = {
+                        order = 17.5,
+                        type = "description",
+                        width = "full",
+                        name = "\n",
+                    },
+                    editbutton = {
+                        order= 18,
+                        type = "execute",
+                        name = _G.SAVE,
+                        hidden = function() return tempname == nil end,
+                        disabled = function() return tempname == nil end,
+                        func = editTheme,
+                    },
+                },
+            },
+            deletetheme = {
+                order = 4,
+                type = "group",
+                name = _G.DELETE,
+                inline = false,
+                disabled = checkThemes,
+                args = {
+                    themename = {
+                        order = 1,
+                        type = "select",
+                        name = L["Theme name"],
+                        get = function() return tempname or customlist[1] end,
+                        set = function(info, value) tempname = value end,
+                        values = function() return customlist end,
+                    },
+                    spacer1 = {
+                        order = 2,
+                        type = "description",
+                        width = "full",
+                        name = "\n",
+                    },
+                    deletebutton = {
+                        order = 3,
+                        type = "execute",
+                        name = _G.DELETE,
+                        func = deleteTheme,
+                    },
+                },
+            },
+        },
+    }
 
-themesTable = {
-	type = "group",
-	name = L["Themes"],
-	inline = false,
-	args = {
-		selecttheme = {
-			order = 1,
-			type = "group",
-			name = L["Select"],
-			inline = false,
-			args = {
-				selection = {
-					order = 1,
-					type = "select",
-					name = L["Select"],
-					get = function() return MDH.db.profile.theme or themelist[1] end,
-					set = function(info, value) MDH.db.profile.theme = value; MDH:ApplyTheme(value) end,
-					values = function() return themelist end,
-				},
-			},
-		},
-		createtheme = {
-			order = 2,
-			type = "group",
-			name = _G.BATTLETAG_CREATE,
-			inline = false,
-			args = {
-				themename = {
-					order = 1,
-					type = "input",
-					name = L["Theme name"],
-					get = function() return tempname end,
-					set = function(info, value) tempname = value end,
-					validate = validateThemeName,
-				},
-				themecopy = {
-					order = 1.5,
-					type = "select",
-					name = L["Copy theme"],
-					get = function() return tmpcopy end,
-					set = function(info, value) temptheme = MDH:deepcopy(MDH.themes[value]); tmpcopy = value end,
-					values = function() return themelist end,
-				},
-				spacer1 = {
-					order = 2,
-					type = "description",
-					width = "full",
-					name = "",
-				},
-				header1 = {
-					order = 3,
-					type = "header",
-					name = L["Fonts"],
-				},
-				headerfont = {
-					order = 4,
-					type = "select",
-					name = L["Header font"],
-					values = fontlist,
-					get = function() return GetTTFont(temptheme.headerfont) end,
-					set = function(info, val) temptheme.headerfont = fontlist[val] .. "HeaderFont" end,
-				},
-				spacer2 = {
-					order = 4.5,
-					type = "description",
-					width = "full",
-					name = "",
-				},
-				linefont = {
-					order = 5,
-					type = "select",
-					name = L["Line font"],
-					values = fontlist,
-					get = function() return GetTTFont(temptheme.linefont) end,
-					set = function(info, val) temptheme.linefont = fontlist[val] .. "LineFont" end,
-				},
-				spacer3 = {
-					order = 5.5,
-					type = "description",
-					width = "full",
-					name = "",
-				},
-				header2 = {
-					order = 6,
-					type = "header",
-					name = _G.BACKGROUND,
-				},
-				title = {
-					order = 6.5,
-					type = "color",
-					hasAlpha = true,
-					name = L["Header"],
-					get = function() return temptheme.title[1], temptheme.title[2], temptheme.title[3], temptheme.title[4] end,
-					set = function(info, r, g, b, a) temptheme.title[1] = r; temptheme.title[2] = g; temptheme.title[3] = b; temptheme.title[4] = a end,
-				},
-				group1 = {
-					order = 7,
-					type = "color",
-					hasAlpha = true,
-					name = L["'Set' options"],
-					get = function() return temptheme.group1[1], temptheme.group1[2], temptheme.group1[3], temptheme.group1[4] end,
-					set = function(info, r, g, b, a) temptheme.group1[1] = r; temptheme.group1[2] = g; temptheme.group1[3] = b; temptheme.group1[4] = a end,
-				},
-				group2 = {
-					order = 8,
-					type = "color",
-					hasAlpha = true,
-					name = L["Enter Player Name"],
-					get = function() return temptheme.group2[1], temptheme.group2[2], temptheme.group2[3], temptheme.group2[4] end,
-					set = function(info, r, g, b, a) temptheme.group2[1] = r; temptheme.group2[2] = g; temptheme.group2[3] = b; temptheme.group2[4] = a end,
-				},
-				group3 = {
-					order = 9,
-					type = "color",
-					hasAlpha = true,
-					name = L["Clear Target"],
-					get = function() return temptheme.group3[1], temptheme.group3[2], temptheme.group3[3], temptheme.group3[4] end,
-					set = function(info, r, g, b, a) temptheme.group3[1] = r; temptheme.group3[2] = g; temptheme.group3[3] = b; temptheme.group3[4] = a end,
-				},
-				group4 = {
-					order = 11,
-					type = "color",
-					hasAlpha = true,
-					name = L["Left/Right Click"],
-					get = function() return temptheme.group4[1], temptheme.group4[2], temptheme.group4[3], temptheme.group4[4] end,
-					set = function(info, r, g, b, a) temptheme.group4[1] = r; temptheme.group4[2] = g; temptheme.group4[3] = b; temptheme.group4[4] = a end,
-				},
-				group5 = {
-					order = 12,
-					type = "color",
-					hasAlpha = true,
-					name = L["Information"],
-					get = function() return temptheme.group5[1], temptheme.group5[2], temptheme.group5[3], temptheme.group5[4] end,
-					set = function(info, r, g, b, a) temptheme.group5[1] = r; temptheme.group5[2] = g; temptheme.group5[3] = b; temptheme.group5[4] = a end,
-				},
-				header3 = {
-					order = 13,
-					type = "header",
-					name = L["Text"],
-				},
-				title1text = {
-					order = 14,
-					type = "color",
-					name = L["Header"],
-					get = function() return MDH:HexToRGBA(temptheme.title[5]) end,
-					set = function(info, r, g, b, a) temptheme.title[5] = MDH:RGBAToHex(r, g, b, a) end,
-				},
-				group4text = {
-					order = 15,
-					type = "color",
-					name = L["Left/Right Click"],
-					get = function() return MDH:HexToRGBA(temptheme.group4[5]) end,
-					set = function(info, r, g, b, a) temptheme.group4[5] = MDH:RGBAToHex(r, g, b, a) end,
-				},
-				group4target = {
-					order = 16,
-					type = "color",
-					name = L["Left/Right Click target"],
-					get = function() return MDH:HexToRGBA(temptheme.group4[6]) end,
-					set = function(info, r, g, b, a) temptheme.group4[6] = MDH:RGBAToHex(r, g, b, a) end,
-				},
-				group5text = {
-					order = 17,
-					type = "color",
-					name = L["Information"],
-					get = function() return MDH:HexToRGBA(temptheme.group5[5]) end,
-					set = function(info, r, g, b, a) temptheme.group5[5] = MDH:RGBAToHex(r, g, b, a) end,
-				},
-				header3 = {
-					order = 17.1,
-					type = "header",
-					name = L["Dividers"],
-				},
-				divider = {
-					order = 17.2,
-					type = "color",
-					name = L["Dividers"],
-					get = function() return temptheme.spacer[1], temptheme.spacer[2], temptheme.spacer[3], temptheme.spacer[4] end,
-					set = function(info, r, g, b, a) temptheme.spacer[1] = r; temptheme.spacer[2] = g; temptheme.spacer[3] = b; temptheme.spacer[4] = a end,
-				},
-				spacer3 = {
-					order = 17.5,
-					type = "description",
-					width = "full",
-					name = "\n",
-				},
-				savebutton = {
-					order= 18,
-					type = "execute",
-					name = _G.SAVE,
-					disabled = function() return tempname == nil end,
-					func = saveTheme,
-				},
-			},
-		},
-		edittheme = {
-			order = 3,
-			type = "group",
-			name = L["Edit"],
-			inline = false,
-			disabled = checkThemes,
-			args = {
-				themename = {
-					order = 1,
-					type = "select",
-					name = L["Select"],
-					get = function() return tempname end,
-					set = function(info, value) tempname = value; temptheme = MDH:deepcopy(MDH.db.global.custom[value]) end,
-					values = function() return customlist end,
-				},
-				spacer1 = {
-					order = 2,
-					type = "description",
-					width = "full",
-					name = "",
-				},
-				header1 = {
-					order = 3,
-					type = "header",
-					name = L["Fonts"],
-					hidden = function() return tempname == nil end,
-				},
-				headerfont = {
-					order = 4,
-					type = "select",
-					name = L["Header font"],
-					values = fontlist,
-					hidden = function() return tempname == nil end,
-					get = function() return GetTTFont(temptheme.headerfont) end,
-					set = function(info, val) temptheme.headerfont = fontlist[val] .. "HeaderFont" end,
-				},
-				spacer2 = {
-					order = 4.5,
-					type = "description",
-					width = "full",
-					name = "",
-				},
-				linefont = {
-					order = 5,
-					type = "select",
-					name = L["Line font"],
-					values = fontlist,
-					hidden = function() return tempname == nil end,
-					get = function() return GetTTFont(temptheme.linefont) end,
-					set = function(info, val) temptheme.linefont = fontlist[val] .. "LineFont" end,
-				},
-				spacer3 = {
-					order = 5.5,
-					type = "description",
-					width = "full",
-					name = "",
-				},
-				header2 = {
-					order = 6,
-					type = "header",
-					name = _G.BACKGROUND,
-					hidden = function() return tempname == nil end,
-				},
-				title = {
-					order = 6.5,
-					type = "color",
-					hasAlpha = true,
-					name = L["Header"],
-					hidden = function() return tempname == nil end,
-					get = function() return temptheme.title[1], temptheme.title[2], temptheme.title[3], temptheme.title[4] end,
-					set = function(info, r, g, b, a) temptheme.title[1] = r; temptheme.title[2] = g; temptheme.title[3] = b; temptheme.title[4] = a end,
-				},
-				group1 = {
-					order = 7,
-					type = "color",
-					hasAlpha = true,
-					name = L["'Set' options"],
-					hidden = function() return tempname == nil end,
-					get = function() return temptheme.group1[1], temptheme.group1[2], temptheme.group1[3], temptheme.group1[4] end,
-					set = function(info, r, g, b, a) temptheme.group1[1] = r; temptheme.group1[2] = g; temptheme.group1[3] = b; temptheme.group1[4] = a end,
-				},
-				group2 = {
-					order = 8,
-					type = "color",
-					hasAlpha = true,
-					name = L["Enter Player Name"],
-					hidden = function() return tempname == nil end,
-					get = function() return temptheme.group2[1], temptheme.group2[2], temptheme.group2[3], temptheme.group2[4] end,
-					set = function(info, r, g, b, a) temptheme.group2[1] = r; temptheme.group2[2] = g; temptheme.group2[3] = b; temptheme.group2[4] = a end,
-				},
-				group3 = {
-					order = 9,
-					type = "color",
-					hasAlpha = true,
-					name = L["Clear Target"],
-					hidden = function() return tempname == nil end,
-					get = function() return temptheme.group3[1], temptheme.group3[2], temptheme.group3[3], temptheme.group3[4] end,
-					set = function(info, r, g, b, a) temptheme.group3[1] = r; temptheme.group3[2] = g; temptheme.group3[3] = b; temptheme.group3[4] = a end,
-				},
-				group4 = {
-					order = 11,
-					type = "color",
-					hasAlpha = true,
-					name = L["Left/Right Click"],
-					hidden = function() return tempname == nil end,
-					get = function() return temptheme.group4[1], temptheme.group4[2], temptheme.group4[3], temptheme.group4[4] end,
-					set = function(info, r, g, b, a) temptheme.group4[1] = r; temptheme.group4[2] = g; temptheme.group4[3] = b; temptheme.group4[4] = a end,
-				},
-				group5 = {
-					order = 12,
-					type = "color",
-					hasAlpha = true,
-					name = L["Information"],
-					hidden = function() return tempname == nil end,
-					get = function() return temptheme.group5[1], temptheme.group5[2], temptheme.group5[3], temptheme.group5[4] end,
-					set = function(info, r, g, b, a) temptheme.group5[1] = r; temptheme.group5[2] = g; temptheme.group5[3] = b; temptheme.group5[4] = a end,
-				},
-				header3 = {
-					order = 13,
-					type = "header",
-					name = L["Text"],
-					hidden = function() return tempname == nil end,
-				},
-				title1text = {
-					order = 14,
-					type = "color",
-					name = L["Header"],
-					hidden = function() return tempname == nil end,
-					get = function() return MDH:HexToRGBA(temptheme.title[5]) end,
-					set = function(info, r, g, b, a) temptheme.title[5] = MDH:RGBAToHex(r, g, b, a) end,
-				},
-				group4text = {
-					order = 15,
-					type = "color",
-					name = L["Left/Right Click"],
-					hidden = function() return tempname == nil end,
-					get = function() return MDH:HexToRGBA(temptheme.group4[5]) end,
-					set = function(info, r, g, b, a) temptheme.group4[5] = MDH:RGBAToHex(r, g, b, a) end,
-				},
-				group4target = {
-					order = 16,
-					type = "color",
-					name = L["Left/Right Click target"],
-					hidden = function() return tempname == nil end,
-					get = function() return MDH:HexToRGBA(temptheme.group4[6]) end,
-					set = function(info, r, g, b, a) temptheme.group4[6] = MDH:RGBAToHex(r, g, b, a) end,
-				},
-				group5text = {
-					order = 17,
-					type = "color",
-					name = L["Information"],
-					hidden = function() return tempname == nil end,
-					get = function() return MDH:HexToRGBA(temptheme.group5[5]) end,
-					set = function(info, r, g, b, a) temptheme.group5[5] = MDH:RGBAToHex(r, g, b, a) end,
-				},
-				header3 = {
-					order = 17.1,
-					type = "header",
-					name = L["Dividers"],
-					hidden = function() return tempname == nil end,
-				},
-				divider = {
-					order = 17.2,
-					type = "color",
-					name = L["Dividers"],
-					hidden = function() return tempname == nil end,
-					get = function() return temptheme.spacer[1], temptheme.spacer[2], temptheme.spacer[3], temptheme.spacer[4] end,
-					set = function(info, r, g, b, a) temptheme.spacer[1] = r; temptheme.spacer[2] = g; temptheme.spacer[3] = b; temptheme.spacer[4] = a end,
-				},
-				spacer3 = {
-					order = 17.5,
-					type = "description",
-					width = "full",
-					name = "\n",
-				},
-				editbutton = {
-					order= 18,
-					type = "execute",
-					name = _G.SAVE,
-					hidden = function() return tempname == nil end,
-					disabled = function() return tempname == nil end,
-					func = editTheme,
-				},
-			},
-		},
-		deletetheme = {
-			order = 4,
-			type = "group",
-			name = _G.DELETE,
-			inline = false,
-			disabled = checkThemes,
-			args = {
-				themename = {
-					order = 1,
-					type = "select",
-					name = L["Theme name"],
-					get = function() return tempname or customlist[1] end,
-					set = function(info, value) tempname = value end,
-					values = function() return customlist end,
-				},
-				spacer1 = {
-					order = 2,
-					type = "description",
-					width = "full",
-					name = "\n",
-				},
-				deletebutton = {
-					order = 3,
-					type = "execute",
-					name = _G.DELETE,
-					func = deleteTheme,
-				},
-			},
-		},
-	},
-}
+    MDH.db.profile.Name = nil
+    MDH.db.profile.Petname = nil
 
-MDH.db.profile.Name = nil
-MDH.db.profile.Petname = nil
+    self.db = AceDB:New("MisDirectionHelperDB", defaults, true)
 
--- Register options table using AceConfig
-AceConfig:RegisterOptionsTable("MisdirectionHelperOptions", optionsTable)
-AceConfig:RegisterOptionsTable("MisdirectionHelperThemes", themesTable)
-AceConfig:RegisterOptionsTable("MisdirectionHelperProfiles", AceDBOptions:GetOptionsTable(MDH.db))
-
--- Create the main options panel frame
-local mainPanel = CreateFrame("Frame", "MisdirectionHelperOptionsPanel", UIParent)
-mainPanel.name = "Misdirection Helper 2"
-mainPanel:Hide()
-
-mainPanel.title = mainPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-mainPanel.title:SetPoint("TOPLEFT", 16, -16)
-mainPanel.title:SetText("Misdirection Helper 2")
-
-mainPanel.instructions = mainPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-mainPanel.instructions:SetPoint("TOPLEFT", mainPanel.title, "BOTTOMLEFT", 0, -8)
-mainPanel.instructions:SetWidth(300)
-mainPanel.instructions:SetJustifyH("LEFT")
-mainPanel.instructions:SetText("Here you can configure Misdirection Helper 2 to your liking.")
-
--- Required functions for frames using Settings API
-mainPanel.OnCommit = function() end
-mainPanel.OnDefault = function() end
-mainPanel.OnRefresh = function() end
-
--- Register the main panel using the Settings API if available
-if Settings then
-    local function RegisterOptionsPanel(panel)
-        local category = Settings.GetCategory(panel.name)
-        if not category then
-            category, layout = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
-            category.ID = panel.name
-            Settings.RegisterAddOnCategory(category)
-        end
+    for k, v in pairs(self.db.global.custom) do
+        self.themes[k .. " (edited)"] = v
     end
 
-    RegisterOptionsPanel(mainPanel)
-else
-    -- Fallback for older versions without the new Settings API
-    InterfaceOptions_AddCategory(mainPanel)
-end
+    local savedTheme = self.db.profile.theme
+    if savedTheme then
+        self:ApplyTheme(savedTheme)
+    end
 
+    -- Register options table using AceConfig
+    AceConfig:RegisterOptionsTable("MisdirectionHelperOptions", optionsTable)
+    AceConfig:RegisterOptionsTable("MisdirectionHelperThemes", themesTable)
+    AceConfig:RegisterOptionsTable("MisdirectionHelperProfiles", AceDBOptions:GetOptionsTable(MDH.db))
 
--- Add options to Blizzard interface options
-AceConfigDialog:AddToBlizOptions("MisdirectionHelperOptions", L["Options"], "Misdirection Helper 2")
-AceConfigDialog:AddToBlizOptions("MisdirectionHelperThemes", L["Themes"], "Misdirection Helper 2")
-AceConfigDialog:AddToBlizOptions("MisdirectionHelperProfiles", L["Profiles"], "Misdirection Helper 2")
+    -- Create the main options panel frame
+    local mainPanel = CreateFrame("Frame", "MisdirectionHelperOptionsPanel", UIParent)
+    mainPanel.name = "Misdirection Helper 2"
+    mainPanel:Hide()
 
--- Create LDB object
-MDH:CreateLDBObject()
-if icon then icon:Register("MisdirectionHelper", MDH.dataObject, MDH.db.profile.minimap) end
-if (GetNumSubgroupMembers() > 0) or (GetNumGroupMembers() > 0) or (UnitInRaid("player")) then MDH.ingroup = true end
-MDH:MDHOnload()
+    mainPanel.title = mainPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    mainPanel.title:SetPoint("TOPLEFT", 16, -16)
+    mainPanel.title:SetText("Misdirection Helper 2")
+
+    mainPanel.instructions = mainPanel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
+    mainPanel.instructions:SetPoint("TOPLEFT", mainPanel.title, "BOTTOMLEFT", 0, -8)
+    mainPanel.instructions:SetWidth(300)
+    mainPanel.instructions:SetJustifyH("LEFT")
+    mainPanel.instructions:SetText("Here you can configure Misdirection Helper 2 to your liking.")
+
+    -- Required functions for frames using Settings API
+    mainPanel.OnCommit = function() end
+    mainPanel.OnDefault = function() end
+    mainPanel.OnRefresh = function() end
+
+    -- Register the main panel using the Settings API if available
+    if Settings then
+        local function RegisterOptionsPanel(panel)
+            local category = Settings.GetCategory(panel.name)
+            if not category then
+                category, layout = Settings.RegisterCanvasLayoutCategory(panel, panel.name)
+                category.ID = panel.name
+                Settings.RegisterAddOnCategory(category)
+            end
+        end
+
+        RegisterOptionsPanel(mainPanel)
+    else
+        -- Fallback for older versions without the new Settings API
+        InterfaceOptions_AddCategory(mainPanel)
+    end
+
+    -- Add options to Blizzard interface options
+    AceConfigDialog:AddToBlizOptions("MisdirectionHelperOptions", L["Options"], "Misdirection Helper 2")
+    AceConfigDialog:AddToBlizOptions("MisdirectionHelperThemes", L["Themes"], "Misdirection Helper 2")
+    AceConfigDialog:AddToBlizOptions("MisdirectionHelperProfiles", L["Profiles"], "Misdirection Helper 2")
+
+    -- Create LDB object
+    MDH:CreateLDBObject()
+    if icon then icon:Register("MisdirectionHelper", MDH.dataObject, MDH.db.profile.minimap) end
+    if (GetNumSubgroupMembers() > 0) or (GetNumGroupMembers() > 0) or (UnitInRaid("player")) then MDH.ingroup = true end
+
+    -- Apply the saved theme on initialization
+    MDH:ApplyTheme(MDH.db.profile.theme or _G.DEFAULT)
+    updateThemeList()
+    MDH:MDHOnload()
 end
 
 function MDH:ApplyTheme(themeName)
-    local theme = MDH.themes[themeName]
+    local actualName = themeName:gsub(" %(edited%)", "")
+    local theme = MDH.themes[actualName] or MDH.db.global.custom[actualName]
     if not theme then return end
 
     MDH.db.profile.headerfont = theme.headerfont
-   
     MDH.db.profile.linefont = theme.linefont
-   
-    
+    MDH:UpdateFonts()
+end
+
+
+function MDH:UpdateFonts()
+    -- Here you would need to implement the logic to update the actual UI elements with the new fonts
+    -- This function is a placeholder and should be expanded with the necessary code to apply the fonts to your UI elements
 end
 
 function MDH:OnEnable()
@@ -1242,13 +1340,13 @@ function MDH:OnEnable()
 end
 
 function MDH:MDHOnload()
-	MDH:RegisterEvent("PLAYER_ENTERING_WORLD")
-	MDH:RegisterEvent("UNIT_PET")
-	MDH:RegisterEvent("UNIT_SPELLCAST_SENT")
-	MDH:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
-	MDH:RegisterEvent("PLAYER_REGEN_DISABLED")
-	MDH:RegisterEvent("PLAYER_FOCUS_CHANGED")
-	MDH.waitFrame = MDHWaitFrame or CreateFrame("Frame", "MDHWaitFrame")
+    MDH:RegisterEvent("PLAYER_ENTERING_WORLD")
+    MDH:RegisterEvent("UNIT_PET")
+    MDH:RegisterEvent("UNIT_SPELLCAST_SENT")
+    MDH:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
+    MDH:RegisterEvent("PLAYER_REGEN_DISABLED")
+    MDH:RegisterEvent("PLAYER_FOCUS_CHANGED")
+    MDH.waitFrame = MDHWaitFrame or CreateFrame("Frame", "MDHWaitFrame")
 	if MDH.db.profile.clearleave or MDH.db.profile.autotank then MDH:RegisterEvent("GROUP_ROSTER_UPDATE") end
 	if MDH.db.profile.autotank then MDH:RegisterEvent("ROLE_CHANGED_INFORM") end
 	if MDH.db.profile.remind then MDH:RegisterEvent("ZONE_CHANGED_NEW_AREA") end
