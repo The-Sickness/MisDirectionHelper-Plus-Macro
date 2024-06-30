@@ -6,14 +6,15 @@ local AceConfig = LibStub:GetLibrary("AceConfig-3.0")
 local AceConfigDialog = LibStub:GetLibrary("AceConfigDialog-3.0")
 local icon = LibStub:GetLibrary("LibDBIcon-1.0")
 local LDB = LibStub:GetLibrary("LibDataBroker-1.1")
-local LSM = LibStub:GetLibrary("LibSharedMedia-3.0")
 local AceGUI = LibStub:GetLibrary("AceGUI-3.0")
 
+-- Helper function to check WoW version
 local function isWow11OrLater()
     local version, build, date, tocversion = GetBuildInfo()
     return tocversion >= 110000
 end
 
+-- Assign the appropriate GetSpellInfo function based on the WoW version
 local function getSpellInfoFunction()
     if isWow11OrLater() then
         return function(spellID)
@@ -236,253 +237,227 @@ end
 
 --************ THEMES ************
 local themelist, customlist
-local fontlist = {[1] = "MDH", [2] = "Arial Narrow", [3] = "Morpheus", [4] = "Skurri"}
+local fontlist = {
+    [1] = "MDH",
+    [2] = "Arial Narrow",
+    [3] = "Morpheus",
+    [4] = "Skurri",
+    [5] = "Yellowjacket",
+	[6] = "Caesar",
+	[7] = "Blazed",
+	[8] = "Adventure",
+	[9] = "Geek",
+	[10] = "Fitz",
+	[11] = "OldEnglish",
+	[12] = "Porky",
+	[13] = "Roman",
+	[14] = "Star",
+	[15] = "SWF!T",
+	[16] = "Abaddon",
+	[17] = "Bazooka",
+	[18] = "Chin",
+	[19] = "Lemon",
+	[20] = "Mona",
+	[21] = "Nightmare",
+	[22] = "Righteous",
+	[23] = "Typewriter",
+	[24] = "United",
+	[25] = "Wood",
+}
 local tmpcopy, tempname, tempdata
 local temptheme = {headerfont="MDHHeaderFont",linefont="MDHLineFont",title={1,0,0,1,"ffffff00"},spacer={0,0,1,1},group1={1,0,0,1},group2={0,1,1,1},group3={0,0.8,0.2,1},group4={1,0,1,0,"ffffff00","ffff0033"},group5={1,0,1,1,"ffffff00"}}
 MDH.themes = {
-    [_G.DEFAULT] = {headerfont="MDHHeaderFont",linefont="MDHLineFont",title={1,0,0,1,"ffffff00"},spacer={0,0,1,1},group1={1,0,0,1},group2={0,1,1,1},group3={0,0.8,0.2,1},group4={1,0,1,0,"ffffff00","ffff0033"},group5={1,0,1,1,"ffffff00"}},
-    ["Basic"] = {headerfont="MDHHeaderFont",linefont="MDHLineFont",title={0,0,0,0,"ffffffff"},spacer={0,0,0,0},group1={0,0,0,0},group2={0,0,0,0},group3={0,0,0,0},group4={0,0,0,0,"ffffffff","ffffffff"},group5={0,0,0,0,"ffffffff"}},
-    ["ElvUI"] = {headerfont="ElvUIHeaderFont",linefont="ElvUILineFont",title={0,0,0,0,"ff1784d1"},spacer={0,0,1,1},group1={0,0,0,0},group2={0,0,0,0},group3={0,0,0,0},group4={0,0,0,0,"ff1784d1","ff778899"},group5={0,0,0,0,"ff1784d1"}},
+    [_G.DEFAULT] = {headerfont = "MyCustomHeaderFont", linefont = "MyCustomLineFont", title = {1,0,0,1,"ffffff00"}, spacer = {0,0,1,1}, group1 = {1,0,0,1}, group2 = {0,1,1,1}, group3 = {0,0.8,0.2,1}, group4 = {1,0,1,0,"ffffff00","ffff0033"}, group5 = {1,0,1,1,"ffffff00"}},
+    ["Basic"] = {headerfont = "MyCustomHeaderFont", linefont = "MyCustomLineFont", title = {0,0,0,0,"ffffffff"}, spacer = {0,0,0,0}, group1 = {0,0,0,0}, group2 = {0,0,0,0}, group3 = {0,0,0,0}, group4 = {0,0,0,0,"ffffffff","ffffffff"}, group5 = {0,0,0,0,"ffffffff"}},
+    ["ElvUI"] = {headerfont = "ElvUIHeaderFont", linefont = "ElvUILineFont", title = {0,0,0,0,"ff1784d1"}, spacer = {0,0,1,1}, group1 = {0,0,0,0}, group2 = {0,0,0,0}, group3 = {0,0,0,0}, group4 = {0,0,0,0,"ff1784d1","ff778899"}, group5 = {0,0,0,0,"ff1784d1"}},
     ["Dark"] = {
         headerfont = "Friz Quadrata TT",
         linefont = "Arial Narrow",
-        title = {0.1, 0.1, 0.1, 1, "ffFFFFFF"},
-        spacer = {1, 1, 1, 1},
-        group1 = {0.1, 0.1, 0.1, 1},
-        group2 = {0.1, 0.1, 0.1, 1},
-        group3 = {0.1, 0.1, 0.1, 1},
-        group4 = {0.1, 0.1, 0.1, 1, "ffFFFFFF", "ffBBBBBB"},
-        group5 = {0.1, 0.1, 0.1, 1, "ffFFFFFF"}
+        title = {0.1, 0.1, 0.1, 1, "ffFFFFFF"}, -- Dark background with white font color
+        spacer = {1, 1, 1, 1}, -- White background for spacers
+        group1 = {0.1, 0.1, 0.1, 1}, -- Dark background for group1
+        group2 = {0.1, 0.1, 0.1, 1}, -- Dark background for group2
+        group3 = {0.1, 0.1, 0.1, 1}, -- Dark background for group3
+        group4 = {0.1, 0.1, 0.1, 1, "ffFFFFFF", "ffBBBBBB"}, -- Dark background with white and light grey font colors
+        group5 = {0.1, 0.1, 0.1, 1, "ffFFFFFF"} -- Dark background with white font color
     },
     ["Vibrant"] = {
         headerfont = "Morpheus",
         linefont = "Skurri",
-        title = {0.9, 0.2, 0.2, 1, "ff000000"},
-        spacer = {0.2, 0.9, 0.2, 1},
-        group1 = {0.2, 0.2, 0.9, 1},
-        group2 = {0.9, 0.9, 0.2, 1},
-        group3 = {0.9, 0.2, 0.9, 1},
-        group4 = {0.2, 0.9, 0.9, 1, "ff000000", "ff000000"},
-        group5 = {0.9, 0.4, 0.2, 1, "ff000000"}
+        title = {0.9, 0.2, 0.2, 1, "ff000000"}, -- Bright red background with black font color
+        spacer = {0.2, 0.9, 0.2, 1}, -- Bright green background for spacers
+        group1 = {0.2, 0.2, 0.9, 1}, -- Bright blue background for group1
+        group2 = {0.9, 0.9, 0.2, 1}, -- Bright yellow background for group2
+        group3 = {0.9, 0.2, 0.9, 1}, -- Bright pink background for group3
+        group4 = {0.2, 0.9, 0.9, 1, "ff000000", "ff000000"}, -- Bright cyan background with black font colors
+        group5 = {0.9, 0.4, 0.2, 1, "ff000000"} -- Bright orange background with black font color
     },
     ["Ocean Breeze"] = {
         headerfont = "Skurri",
         linefont = "Arial Narrow",
-        title = {0.2, 0.4, 0.8, 1, "ffFFFFFF"},
-        spacer = {0.4, 0.6, 0.8, 1},
-        group1 = {0.2, 0.5, 0.7, 1},
-        group2 = {0.3, 0.6, 0.8, 1},
-        group3 = {0.2, 0.5, 0.7, 1},
-        group4 = {0.4, 0.6, 0.8, 1, "ffFFFFFF", "ffDDDDDD"},
-        group5 = {0.2, 0.5, 0.7, 1, "ffFFFFFF"}
+        title = {0.2, 0.4, 0.8, 1, "ffFFFFFF"}, -- Cool blue background with white font color
+        spacer = {0.4, 0.6, 0.8, 1}, -- Light blue background for spacers
+        group1 = {0.2, 0.5, 0.7, 1}, -- Blue background for group1
+        group2 = {0.3, 0.6, 0.8, 1}, -- Blue background for group2
+        group3 = {0.2, 0.5, 0.7, 1}, -- Blue background for group3
+        group4 = {0.4, 0.6, 0.8, 1, "ffFFFFFF", "ffDDDDDD"}, -- Light blue background with white and light grey font colors
+        group5 = {0.2, 0.5, 0.7, 1, "ffFFFFFF"} -- Blue background with white font color
     },
     ["Sunset Glow"] = {
         headerfont = "Morpheus",
         linefont = "Friz Quadrata TT",
-        title = {0.9, 0.4, 0.2, 1, "ff000000"},
-        spacer = {0.9, 0.2, 0.1, 1},
-        group1 = {0.8, 0.3, 0.1, 1},
-        group2 = {0.9, 0.4, 0.2, 1},
-        group3 = {0.8, 0.3, 0.1, 1},
-        group4 = {0.9, 0.2, 0.1, 1, "ff000000", "ff333333"},
-        group5 = {0.8, 0.3, 0.1, 1, "ff000000"}
+        title = {0.9, 0.4, 0.2, 1, "ff000000"}, -- Warm orange background with black font color
+        spacer = {0.9, 0.2, 0.1, 1}, -- Bright red background for spacers
+        group1 = {0.8, 0.3, 0.1, 1}, -- Warm orange background for group1
+        group2 = {0.9, 0.4, 0.2, 1}, -- Warm orange background for group2
+        group3 = {0.8, 0.3, 0.1, 1}, -- Warm orange background for group3
+        group4 = {0.9, 0.2, 0.1, 1, "ff000000", "ff333333"}, -- Bright red background with black and dark grey font colors
+        group5 = {0.8, 0.3, 0.1, 1, "ff000000"} -- Warm orange background with black font color
     },
     ["Forest Whisper"] = {
         headerfont = "Arial Narrow",
         linefont = "Skurri",
-        title = {0.2, 0.6, 0.2, 1, "ffFFFFFF"},
-        spacer = {0.3, 0.7, 0.3, 1},
-        group1 = {0.2, 0.5, 0.2, 1},
-        group2 = {0.3, 0.7, 0.3, 1},
-        group3 = {0.2, 0.5, 0.2, 1},
-        group4 = {0.3, 0.7, 0.3, 1, "ffFFFFFF", "ffDDDDDD"},
-        group5 = {0.2, 0.5, 0.2, 1, "ffFFFFFF"}
+        title = {0.2, 0.6, 0.2, 1, "ffFFFFFF"}, -- Green background with white font color
+        spacer = {0.3, 0.7, 0.3, 1}, -- Light green background for spacers
+        group1 = {0.2, 0.5, 0.2, 1}, -- Green background for group1
+        group2 = {0.3, 0.7, 0.3, 1}, -- Light green background for group2
+        group3 = {0.2, 0.5, 0.2, 1}, -- Green background for group3
+        group4 = {0.3, 0.7, 0.3, 1, "ffFFFFFF", "ffDDDDDD"}, -- Light green background with white and light grey font colors
+        group5 = {0.2, 0.5, 0.2, 1, "ffFFFFFF"} -- Green background with white font color
     },
     ["Night Sky"] = {
         headerfont = "Morpheus",
         linefont = "Friz Quadrata TT",
-        title = {0.1, 0.1, 0.3, 1, "ffFFFFFF"},
-        spacer = {0.2, 0.2, 0.5, 1},
-        group1 = {0.1, 0.1, 0.4, 1},
-        group2 = {0.2, 0.2, 0.5, 1},
-        group3 = {0.1, 0.1, 0.4, 1},
-        group4 = {0.2, 0.2, 0.5, 1, "ffFFFFFF", "ffCCCCFF"},
-        group5 = {0.1, 0.1, 0.4, 1, "ffFFFFFF"}
+        title = {0.1, 0.1, 0.3, 1, "ffFFFFFF"}, -- Dark blue background with white font color
+        spacer = {0.2, 0.2, 0.5, 1}, -- Darker blue background for spacers
+        group1 = {0.1, 0.1, 0.4, 1}, -- Dark blue background for group1
+        group2 = {0.2, 0.2, 0.5, 1}, -- Darker blue background for group2
+        group3 = {0.1, 0.1, 0.4, 1}, -- Dark blue background for group3
+        group4 = {0.2, 0.2, 0.5, 1, "ffFFFFFF", "ffCCCCFF"}, -- Darker blue background with white and light purple font colors
+        group5 = {0.1, 0.1, 0.4, 1, "ffFFFFFF"} -- Dark blue background with white font color
     },
     ["Candy Pop"] = {
         headerfont = "Skurri",
         linefont = "Arial Narrow",
-        title = {0.9, 0.6, 0.6, 1, "ff000000"},
-        spacer = {0.9, 0.9, 0.2, 1},
-        group1 = {0.8, 0.4, 0.9, 1},
-        group2 = {0.9, 0.6, 0.6, 1},
-        group3 = {0.8, 0.4, 0.9, 1},
-        group4 = {0.9, 0.9, 0.2, 1, "ff000000", "ff333333"},
-        group5 = {0.8, 0.4, 0.9, 1, "ff000000"}
+        title = {0.9, 0.6, 0.6, 1, "ff000000"}, -- Bright pink background with black font color
+        spacer = {0.9, 0.9, 0.2, 1}, -- Bright yellow background for spacers
+        group1 = {0.8, 0.4, 0.9, 1}, -- Bright purple background for group1
+        group2 = {0.9, 0.6, 0.6, 1}, -- Bright pink background for group2
+        group3 = {0.8, 0.4, 0.9, 1}, -- Bright purple background for group3
+        group4 = {0.9, 0.9, 0.2, 1, "ff000000", "ff333333"}, -- Bright yellow background with black and dark grey font colors
+        group5 = {0.8, 0.4, 0.9, 1, "ff000000"} -- Bright purple background with black font color
     },
     ["Fire Storm"] = {
         headerfont = "Skurri",
         linefont = "Friz Quadrata TT",
-        title = {0.8, 0.2, 0.2, 1, "ffFFFFFF"},
-        spacer = {0.9, 0.4, 0.1, 1},
-        group1 = {0.8, 0.3, 0.1, 1},
-        group2 = {0.8, 0.2, 0.2, 1},
-        group3 = {0.9, 0.4, 0.1, 1},
-        group4 = {0.8, 0.3, 0.1, 1, "ffFFFFFF", "ffDDDDDD"},
-        group5 = {0.8, 0.2, 0.2, 1, "ffFFFFFF"}
+        title = {0.8, 0.2, 0.2, 1, "ffFFFFFF"}, -- Fiery red background with white font color
+        spacer = {0.9, 0.4, 0.1, 1}, -- Bright orange background for spacers
+        group1 = {0.8, 0.3, 0.1, 1}, -- Warm orange background for group1
+        group2 = {0.8, 0.2, 0.2, 1}, -- Fiery red background for group2
+        group3 = {0.9, 0.4, 0.1, 1}, -- Bright orange background for group3
+        group4 = {0.8, 0.3, 0.1, 1, "ffFFFFFF", "ffDDDDDD"}, -- Warm orange background with white and light grey font colors
+        group5 = {0.8, 0.2, 0.2, 1, "ffFFFFFF"} -- Fiery red background with white font color
     },
     ["Tropical Rain"] = {
         headerfont = "Arial Narrow",
         linefont = "Skurri",
-        title = {0.3, 0.8, 0.3, 1, "ff000000"},
-        spacer = {0.1, 0.5, 0.1, 1},
-        group1 = {0.3, 0.8, 0.3, 1},
-        group2 = {0.4, 0.9, 0.4, 1},
-        group3 = {0.1, 0.5, 0.1, 1},
-        group4 = {0.3, 0.8, 0.3, 1, "ff000000", "ff333333"},
-        group5 = {0.4, 0.9, 0.4, 1, "ff000000"}
+        title = {0.3, 0.8, 0.3, 1, "ff000000"}, -- Vibrant green background with black font color
+        spacer = {0.1, 0.5, 0.1, 1}, -- Dark green background for spacers
+        group1 = {0.3, 0.8, 0.3, 1}, -- Vibrant green background for group1
+        group2 = {0.4, 0.9, 0.4, 1}, -- Light green background for group2
+        group3 = {0.1, 0.5, 0.1, 1}, -- Dark green background for group3
+        group4 = {0.3, 0.8, 0.3, 1, "ff000000", "ff333333"}, -- Vibrant green background with black and dark grey font colors
+        group5 = {0.4, 0.9, 0.4, 1, "ff000000"} -- Light green background with black font color
     },
     ["Royal Purple"] = {
         headerfont = "Morpheus",
         linefont = "Arial Narrow",
-        title = {0.5, 0.1, 0.5, 1, "ffFFFFFF"},
-        spacer = {0.8, 0.2, 0.8, 1},
-        group1 = {0.5, 0.1, 0.5, 1},
-        group2 = {0.8, 0.2, 0.8, 1},
-        group3 = {0.5, 0.1, 0.5, 1},
-        group4 = {0.8, 0.2, 0.8, 1, "ffFFFFFF", "ffCCCCCC"},
-        group5 = {0.5, 0.1, 0.5, 1, "ffFFFFFF"}
+        title = {0.5, 0.1, 0.5, 1, "ffFFFFFF"}, -- Deep purple background with white font color
+        spacer = {0.8, 0.2, 0.8, 1}, -- Bright purple background for spacers
+        group1 = {0.5, 0.1, 0.5, 1}, -- Deep purple background for group1
+        group2 = {0.8, 0.2, 0.8, 1}, -- Bright purple background for group2
+        group3 = {0.5, 0.1, 0.5, 1}, -- Deep purple background for group3
+        group4 = {0.8, 0.2, 0.8, 1, "ffFFFFFF", "ffCCCCCC"}, -- Bright purple background with white and light grey font colors
+        group5 = {0.5, 0.1, 0.5, 1, "ffFFFFFF"} -- Deep purple background with white font color
     },
     ["Neon Lights"] = {
         headerfont = "Skurri",
         linefont = "Friz Quadrata TT",
-        title = {0.1, 0.9, 0.9, 1, "ff000000"},
-        spacer = {0.2, 0.7, 0.7, 1},
-        group1 = {0.1, 0.8, 0.8, 1},
-        group2 = {0.2, 0.9, 0.9, 1},
-        group3 = {0.2, 0.7, 0.7, 1},
-        group4 = {0.1, 0.9, 0.9, 1, "ff000000", "ff333333"},
-        group5 = {0.1, 0.8, 0.8, 1, "ff000000"}
+        title = {0.1, 0.9, 0.9, 1, "ff000000"}, -- Bright cyan background with black font color
+        spacer = {0.2, 0.7, 0.7, 1}, -- Teal background for spacers
+        group1 = {0.1, 0.8, 0.8, 1}, -- Cyan background for group1
+        group2 = {0.2, 0.9, 0.9, 1}, -- Bright cyan background for group2
+        group3 = {0.2, 0.7, 0.7, 1}, -- Teal background for group3
+        group4 = {0.1, 0.9, 0.9, 1, "ff000000", "ff333333"}, -- Bright cyan background with black and dark grey font colors
+        group5 = {0.1, 0.8, 0.8, 1, "ff000000"} -- Cyan background with black font color
+    },
+    ["Candy Pop"] = {
+        headerfont = "Skurri",
+        linefont = "Arial Narrow",
+        title = {0.9, 0.6, 0.6, 1, "ff000000"}, -- Bright pink background with black font color
+        spacer = {0.9, 0.9, 0.2, 1}, -- Bright yellow background for spacers
+        group1 = {0.8, 0.4, 0.9, 1}, -- Bright purple background for group1
+        group2 = {0.9, 0.6, 0.6, 1}, -- Bright pink background for group2
+        group3 = {0.8, 0.4, 0.9, 1}, -- Bright purple background for group3
+        group4 = {0.9, 0.9, 0.2, 1, "ff000000", "ff333333"}, -- Bright yellow background with black and dark grey font colors
+        group5 = {0.8, 0.4, 0.9, 1, "ff000000"} -- Bright purple background with black font color
     },
     ["Electric Blue"] = {
         headerfont = "Morpheus",
         linefont = "Friz Quadrata TT",
-        title = {0.2, 0.4, 0.9, 1, "ffFFFFFF"},
-        spacer = {0.3, 0.5, 1, 1},
-        group1 = {0.2, 0.4, 0.9, 1},
-        group2 = {0.3, 0.5, 1, 1},
-        group3 = {0.2, 0.4, 0.9, 1},
-        group4 = {0.3, 0.5, 1, 1, "ffFFFFFF", "ffCCCCFF"},
-        group5 = {0.2, 0.4, 0.9, 1, "ffFFFFFF"}
+        title = {0.2, 0.4, 0.9, 1, "ffFFFFFF"}, -- Electric blue background with white font color
+        spacer = {0.3, 0.5, 1, 1}, -- Bright blue background for spacers
+        group1 = {0.2, 0.4, 0.9, 1}, -- Electric blue background for group1
+        group2 = {0.3, 0.5, 1, 1}, -- Bright blue background for group2
+        group3 = {0.2, 0.4, 0.9, 1}, -- Electric blue background for group3
+        group4 = {0.3, 0.5, 1, 1, "ffFFFFFF", "ffCCCCFF"}, -- Bright blue background with white and light purple font colors
+        group5 = {0.2, 0.4, 0.9, 1, "ffFFFFFF"} -- Electric blue background with white font color
     },
     ["Bold Red"] = {
         headerfont = "Skurri",
         linefont = "Arial Narrow",
-        title = {0.8, 0.2, 0.2, 1, "ffFFFFFF"},
-        spacer = {0.9, 0.1, 0.1, 1},
-        group1 = {0.8, 0.2, 0.2, 1},
-        group2 = {0.9, 0.1, 0.1, 1},
-        group3 = {0.8, 0.2, 0.2, 1},
-        group4 = {0.9, 0.1, 0.1, 1, "ffFFFFFF", "ffDDDDDD"},
-        group5 = {0.8, 0.2, 0.2, 1, "ffFFFFFF"}
+        title = {0.8, 0.2, 0.2, 1, "ffFFFFFF"}, -- Bold red background with white font color
+        spacer = {0.9, 0.1, 0.1, 1}, -- Bright red background for spacers
+        group1 = {0.8, 0.2, 0.2, 1}, -- Bold red background for group1
+        group2 = {0.9, 0.1, 0.1, 1}, -- Bright red background for group2
+        group3 = {0.8, 0.2, 0.2, 1}, -- Bold red background for group3
+        group4 = {0.9, 0.1, 0.1, 1, "ffFFFFFF", "ffDDDDDD"}, -- Bright red background with white and light grey font colors
+        group5 = {0.8, 0.2, 0.2, 1, "ffFFFFFF"} -- Bold red background with white font color
     },
     ["Vivid Green"] = {
         headerfont = "Arial Narrow",
         linefont = "Skurri",
-        title = {0.2, 0.9, 0.2, 1, "ff000000"},
-        spacer = {0.3, 0.9, 0.3, 1},
-        group1 = {0.2, 0.8, 0.2, 1},
-        group2 = {0.3, 0.9, 0.3, 1},
-        group3 = {0.2, 0.8, 0.2, 1},
-        group4 = {0.3, 0.9, 0.3, 1, "ff000000", "ff333333"},
-        group5 = {0.2, 0.8, 0.2, 1, "ff000000"}
+        title = {0.2, 0.9, 0.2, 1, "ff000000"}, -- Vivid green background with black font color
+        spacer = {0.3, 0.9, 0.3, 1}, -- Bright green background for spacers
+        group1 = {0.2, 0.8, 0.2, 1}, -- Vivid green background for group1
+        group2 = {0.3, 0.9, 0.3, 1}, -- Bright green background for group2
+        group3 = {0.2, 0.8, 0.2, 1}, -- Vivid green background for group3
+        group4 = {0.3, 0.9, 0.3, 1, "ff000000", "ff333333"}, -- Bright green background with black and dark grey font colors
+        group5 = {0.2, 0.8, 0.2, 1, "ff000000"} -- Vivid green background with black font color
     },
     ["Sunny Yellow"] = {
         headerfont = "Skurri",
         linefont = "Arial Narrow",
-        title = {0.9, 0.9, 0.2, 1, "ff000000"},
-        spacer = {0.9, 0.9, 0.4, 1},
-        group1 = {0.9, 0.9, 0.2, 1},
-        group2 = {0.9, 0.9, 0.4, 1},
-        group3 = {0.9, 0.9, 0.2, 1},
-        group4 = {0.9, 0.9, 0.4, 1, "ff000000", "ff333333"},
-        group5 = {0.9, 0.9, 0.2, 1, "ff000000"}
-    },
-["Retro Wave"] = {
-    headerfont = "Morpheus",
-    linefont = "Skurri",
-    title = {0.5, 0.2, 0.8, 1, "ff00FF00"},
-    spacer = {0.1, 0.1, 0.1, 1},
-    group1 = {0.5, 0.2, 0.8, 1},
-    group2 = {0.3, 0.3, 0.3, 1},
-    group3 = {0.5, 0.2, 0.8, 1},
-    group4 = {0.3, 0.3, 0.3, 1, "ff00FF00", "ffFF00FF"},
-    group5 = {0.5, 0.2, 0.8, 1, "ff00FF00"}
-},
-
-["Desert Mirage"] = {
-    headerfont = "Friz Quadrata TT",
-    linefont = "Arial Narrow",
-    title = {0.9, 0.6, 0.3, 1, "ff000000"},
-    spacer = {0.8, 0.7, 0.5, 1},
-    group1 = {0.9, 0.6, 0.3, 1},
-    group2 = {0.8, 0.7, 0.5, 1},
-    group3 = {0.9, 0.6, 0.3, 1},
-    group4 = {0.8, 0.7, 0.5, 1, "ff000000", "ff333333"},
-    group5 = {0.9, 0.6, 0.3, 1, "ff000000"}
-},
-["Ice Queen"] = {
-    headerfont = "Arial Narrow",
-    linefont = "Friz Quadrata TT",
-    title = {0.6, 0.8, 1, 1, "ffFFFFFF"},
-    spacer = {0.4, 0.6, 0.8, 1},
-    group1 = {0.6, 0.8, 1, 1},
-    group2 = {0.4, 0.6, 0.8, 1},
-    group3 = {0.6, 0.8, 1, 1},
-    group4 = {0.4, 0.6, 0.8, 1, "ffFFFFFF", "ffAAAAAA"},
-    group5 = {0.6, 0.8, 1, 1, "ffFFFFFF"}
-},
-
-["Sunflower"] = {
-    headerfont = "Morpheus",
-    linefont = "Arial Narrow",
-    title = {0.9, 0.8, 0.2, 1, "ff000000"},
-    spacer = {0.9, 0.8, 0.2, 1},
-    group1 = {0.9, 0.8, 0.2, 1},
-    group2 = {0.9, 0.8, 0.2, 1},
-    group3 = {0.9, 0.8, 0.2, 1},
-    group4 = {0.9, 0.8, 0.2, 1, "ff000000", "ff444444"},
-    group5 = {0.9, 0.8, 0.2, 1, "ff000000"}
-},
-
-["Midnight Dream"] = {
-    headerfont = "Friz Quadrata TT",
-    linefont = "Skurri",
-    title = {0.2, 0.2, 0.5, 1, "ffDDDDDD"},
-    spacer = {0.1, 0.1, 0.3, 1},
-    group1 = {0.2, 0.2, 0.5, 1},
-    group2 = {0.1, 0.1, 0.3, 1},
-    group3 = {0.2, 0.2, 0.5, 1},
-    group4 = {0.1, 0.1, 0.3, 1, "ffDDDDDD", "ffAAAAAA"},
-    group5 = {0.2, 0.2, 0.5, 1, "ffDDDDDD"}
- },
+        title = {0.9, 0.9, 0.2, 1, "ff000000"}, -- Bright yellow background with black font color
+        spacer = {0.9, 0.9, 0.4, 1}, -- Light yellow background for spacers
+        group1 = {0.9, 0.9, 0.2, 1}, -- Bright yellow background for group1
+        group2 = {0.9, 0.9, 0.4, 1}, -- Light yellow background for group2
+        group3 = {0.9, 0.9, 0.2, 1}, -- Bright yellow background for group3
+        group4 = {0.9, 0.9, 0.4, 1, "ff000000", "ff333333"}, -- Light yellow background with black and dark grey font colors
+        group5 = {0.9, 0.9, 0.2, 1, "ff000000"} -- Bright yellow background with black font color
+    }
 }
-
 
 local function GetTTFont(font)
     local pos = string.find(font, "Header") or string.find(font, "Line")
-    if not pos then
-        return nil 
-    end
+    if not pos then return nil end
     local name = string.sub(font, 1, pos - 1)
-    local fpos
     for k, v in pairs(fontlist) do
         if v == name then
-            fpos = k
-            break
+            return k
         end
     end
-    return fpos
+    return nil
 end
 
 function MDH:MDHTextUpdate() MDH.dataObject.text = MDH:TTText("both") end
@@ -820,12 +795,12 @@ function MDH:OnInitialize()
                         name = L["Fonts"],
                     },
                     headerfont = {
-                        order = 4,
-                        type = "select",
-                        name = L["Header font"],
-                        values = fontlist,
-                        get = function() return GetTTFont(temptheme.headerfont) end,
-                        set = function(info, val) temptheme.headerfont = fontlist[val] .. "HeaderFont" end,
+                    order = 4,
+                    type = "select",
+                    name = L["Header font"],
+                    values = fontlist,
+                    get = function() return GetTTFont(temptheme.headerfont) end,
+                    set = function(info, val) temptheme.headerfont = fontlist[val] .. "HeaderFont" end,
                     },
                     spacer2 = {
                         order = 4.5,
@@ -834,12 +809,12 @@ function MDH:OnInitialize()
                         name = "",
                     },
                     linefont = {
-                        order = 5,
-                        type = "select",
-                        name = L["Line font"],
-                        values = fontlist,
-                        get = function() return GetTTFont(temptheme.linefont) end,
-                        set = function(info, val) temptheme.linefont = fontlist[val] .. "LineFont" end,
+                    order = 5,
+                    type = "select",
+                    name = L["Line font"],
+                    values = fontlist,
+                    get = function() return GetTTFont(temptheme.linefont) end,
+                    set = function(info, val) temptheme.linefont = fontlist[val] .. "LineFont" end,
                     },
                     spacer3 = {
                         order = 5.5,
@@ -1262,76 +1237,90 @@ function MDH:ApplyTheme(themeName)
     MDH:UpdateFonts()
 end
 
-
 function MDH:UpdateFonts()
-    -- Here you would need to implement the logic to update the actual UI elements with the new fonts
-    -- This function is a placeholder and should be expanded with the necessary code to apply the fonts to your UI elements
+    local headerFont = MDH.db.profile.headerfont
+    local lineFont = MDH.db.profile.linefont
+
+    -- Apply fonts to UI elements
+    if MDH.uiElementHeader then
+        MDH.uiElementHeader:SetFontObject(MDH.fonts[headerFont].font)
+    end
+    if MDH.uiElementLine then
+        MDH.uiElementLine:SetFontObject(MDH.fonts[lineFont].font)
+    end
 end
 
 function MDH:OnEnable()
-    -- Initialize fonts
     MDH.fonts = {}
-    MDH.fonts.MDHHeaderFont = {font=CreateFont("MDHHeaderFont")}
-    MDH.fonts.MDHHeaderFont.font:SetFont(GameTooltipHeaderText:GetFont(), 15, "")
-    MDH.fonts.MDHLineFont = {font=CreateFont("MDHLineFont")}
-    MDH.fonts.MDHLineFont.font:SetFont(GameTooltipText:GetFont(), 12, "")
+    
+    local fonts = {
+        MDHHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\MDH.ttf",
+        MDHLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\MDH.ttf",
+        ArialNHeaderFont = "Fonts\\ARIALN.TTF",
+        ArialNLineFont = "Fonts\\ARIALN.TTF",
+        MorpheusHeaderFont = "Fonts\\MORPHEUS.TTF",
+        MorpheusLineFont = "Fonts\\MORPHEUS.TTF",
+        SkurriHeaderFont = "Fonts\\SKURRI.TTF",
+        SkurriLineFont = "Fonts\\SKURRI.TTF",
+        FrizHeaderFont = "Fonts\\FRIZQT__.TTF",
+        FrizLineFont = "Fonts\\FRIZQT__.TTF",
+		BlazedHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Blazed.ttf",
+        BlazedLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Blazed.ttf",
+        CaesarHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Caesar.ttf",
+        CaesarLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Caesar.ttf",
+        YellowjacketHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Yellowjacket.ttf",
+        YellowjacketLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Yellowjacket.ttf",
+	    AdventureHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Adventure.ttf",
+        AdventureFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Adventure.ttf",
+	    FitzHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Fitz.ttf",
+        FitzLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Fitz.ttf",
+		GeekHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Geek.ttf",
+        GeekLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Geek.ttf",
+		OldEnglishHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\OldEnglish.ttf",
+        OldEnglishLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\OldEnglish.ttf",
+		StarHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Star.ttf",
+        StarLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Star.ttf",
+		RomanHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Roman.ttf",
+        RomanLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Roman.ttf",
+		AbaddonHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Abaddon.ttf",
+        AbaddonLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Abaddon.ttf",
+		BazookaHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Bazooka.ttf",
+        BazookaLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Bazooka.ttf",
+		ChinHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Chin.ttf",
+        ChinLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Chin.ttf",
+		CoffeeHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Coffee.ttf",
+        CoffeeLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Coffee.ttf",
+		LemonHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Lemon.ttf",
+        LemonLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Lemon.ttf",
+		MonaHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Mona.ttf",
+        MonaLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Mona.ttf",
+		NightmareHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Nightmare.ttf",
+        NightmareLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Nightmare.ttf",
+		RighteousHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Righteous.ttf",
+        RighteousLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Righteous.ttf",
+		WoodHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Wood.ttf",
+        WoodLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Wood.ttf",
+		TypewriterHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Typewriter.ttf",
+        TypewriterLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\Typewriter.ttf",
+		UnitedHeaderFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\United.ttf",
+        UnitedLineFont = "Interface\\AddOns\\MisDirectionHelper2\\Fonts\\United.ttf",
+    }
 
-    local mdhfont = CreateFont("ElvFont")
-    local loadedOrLoading, loaded
-
-    -- Check if Tukui is loaded
-    loadedOrLoading, loaded = C_AddOns.IsAddOnLoaded("Tukui")
-    if loaded then
-        local T, C, L = unpack(Tukui)
-        if C.Medias then
-            mdhfont:SetFont(C.Medias.Font, 12, "")
+    for name, path in pairs(fonts) do
+        local font = CreateFont(name)
+        if string.find(name, "Header") then
+            font:SetFont(path, 14, "")
         else
-            mdhfont:SetFont(C.Media.font, 12, "")
+            font:SetFont(path, 12, "")
         end
-    else
-        -- Check if ElvUI is loaded
-        loadedOrLoading, loaded = C_AddOns.IsAddOnLoaded("ElvUI")
-        if loaded then
-            local E, L, V, P, G, DF = unpack(ElvUI)
-            mdhfont:SetFont(E["media"].normFont, 12, "")
-        else
-            mdhfont:SetFont(GameTooltipText:GetFont(), 12, "")
-        end
+        MDH.fonts[name] = { font = font }
     end
-
-    MDH.fonts.ElvUIHeaderFont = {font=mdhfont}
-    MDH.fonts.ElvUIHeaderFont.font:SetFont(mdhfont:GetFont(), 14, "")
-    MDH.fonts.ElvUILineFont = {font=mdhfont}
-    MDH.fonts.ElvUILineFont.font:SetFont(mdhfont:GetFont(), 12, "")
-
-    mdhfont = CreateFont("Friz")
-    MDH.fonts.FrizHeaderFont = {font=mdhfont}
-    MDH.fonts.FrizHeaderFont.font:SetFont("Fonts\\FRIZQT__.TTF", 14, "")
-    MDH.fonts.FrizLineFont = {font=mdhfont}
-    MDH.fonts.FrizLineFont.font:SetFont("Fonts\\FRIZQT__.TTF", 12, "")
-
-    mdhfont = CreateFont("ArialN")
-    MDH.fonts.ArialNHeaderFont = {font=mdhfont}
-    MDH.fonts.ArialNHeaderFont.font:SetFont("Fonts\\ARIALN.TTF", 14, "")
-    MDH.fonts.ArialNLineFont = {font=mdhfont}
-    MDH.fonts.ArialNLineFont.font:SetFont("Fonts\\ARIALN.TTF", 12, "")
-
-    mdhfont = CreateFont("Skurri")
-    MDH.fonts.SkurriHeaderFont = {font=mdhfont}
-    MDH.fonts.SkurriHeaderFont.font:SetFont("Fonts\\SKURRI.TTF", 14, "")
-    MDH.fonts.SkurriLineFont = {font=mdhfont}
-    MDH.fonts.SkurriLineFont.font:SetFont("Fonts\\SKURRI.TTF", 12, "")
-
-    mdhfont = CreateFont("Morpheus")
-    MDH.fonts.MorpheusHeaderFont = {font=mdhfont}
-    MDH.fonts.MorpheusHeaderFont.font:SetFont("Fonts\\MORPHEUS.TTF", 14, "")
-    MDH.fonts.MorpheusLineFont = {font=mdhfont}
-    MDH.fonts.MorpheusLineFont.font:SetFont("Fonts\\MORPHEUS.TTF", 12, "")
 
     for k, v in pairs(MDH.db.global.custom) do
         MDH.themes[k] = v
     end
     updateThemeList()
+    
     _G.SLASH_MDH_CMD1 = "/mdh"
     _G.SlashCmdList["MDH_CMD"] = function(input)
         InterfaceOptionsFrame_OpenToCategory(MDH.optionsFrame)
