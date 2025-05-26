@@ -1,10 +1,10 @@
-## Interface: 100207, 110000, 110002
+## Interface: 110105, 110107
 ## Title: MisDirectionHelper2
 ## Notes: Use Misdirection / Tricks of the Trade with one click without losing your target. Create Smart Macros for Applying and Announcing Misdirection / Tricks of the Trade.
 ## Author: Deepac, Gabriel, Jotschi, Soul, Sharpedge_Gaming
 ## OptionalDeps: TipTac, Tukui, ElvUI, Tukui_Packages_Skins, Ace3, LibStub, CallbackHandler-1.0, LibQTip-1.0, LibDBIcon-1.0
 ## SavedVariables: MisDirectionHelperDB
-## Version: v11.04
+## Version: v11.12
 ## IconTexture: 626000
 ## X-Localizations: enUS, deDE, frFR, koKR, ruRU, ptBR, zhCN, zhTW, esES, esMX, itIT
 ## X-Compatible-With: 100207, 110000
@@ -36,17 +36,18 @@ libs\LibQTip-1.0\LibQTip-1.0.lua
 #@end-no-lib-strip@
 
 
-locale\locale-enUS.lua
-locale\locale-deDE.lua
-locale\locale-frFR.lua
-locale\locale-koKR.lua
-locale\locale-ruRU.lua
-locale\locale-ptBR.lua
-locale\locale-zhCN.lua
-locale\locale-zhTW.lua
-locale\locale-esES.lua
-locale\locale-esMX.lua
-locale\locale-itIT.lua
+locale\enUS.lua
+locale\deDE.lua
+locale\frFR.lua
+locale\koKR.lua
+locale\ruRU.lua
+locale\ptBR.lua
+locale\zhCN.lua
+locale\zhTW.lua
+locale\esES.lua
+locale\esMX.lua
+locale\itIT.lua
+locale\ukUA.lua
 
 MDHLDB.lua
 modules\general.lua
