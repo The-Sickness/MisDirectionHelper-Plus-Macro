@@ -235,6 +235,46 @@ local function createMainPanel()
     return frame
 end
 
+local delves = {
+    { name = "Archival Assault", zone = "K'aresh", coords = {55, 48} },
+    { name = "The Dread Pit", zone = "Ringing Deeps", coords = {68, 39} },
+    { name = "Earthcrawl Mines", zone = "Isle of Dorn", coords = {35.5, 79.2} },
+    { name = "Excavation Site 9", zone = "Ringing Deeps", coords = {81, 98} },
+    { name = "Fungal Folly", zone = "Isle of Dorn", coords = {51.7, 70.4} },
+    { name = "Kriegval's Rest", zone = "Isle of Dorn", coords = {63.0, 42.5} },
+    { name = "Mycomancer Cavern", zone = "Hallowfall", coords = {70, 30} },
+    { name = "Nightfall Sanctum", zone = "Hallowfall", coords = {34, 47} },
+    { name = "Sidestreet Sluice", zone = "Undermine", coords = {35, 53} },
+    { name = "The Sinkhole", zone = "Hallowfall", coords = {50, 52} },
+    { name = "Skittering Breach", zone = "Hallowfall", coords = {65, 61} },
+    { name = "The Spiral Weave", zone = "Azj-Kahet", coords = {46.5, 25.4} },
+    { name = "Tak-Rethan Abyss", zone = "Azj-Kahet", coords = {55.6, 75.7} },
+    { name = "The Underkeep", zone = "Azj-Kahet", coords = {52.6, 88.9} },
+    { name = "The Waterworks", zone = "Ringing Deeps", coords = {37, 50} },
+}
+
+-- Checks if the player is in a delve by zone and near the delve coordinates
+local function IsInDelve()
+    local zone = GetZoneText() or GetRealZoneText()
+    local mapID = C_Map.GetBestMapForUnit("player")
+    if not mapID then return false end
+    local pos = C_Map.GetPlayerMapPosition(mapID, "player")
+    if not pos then return false end
+    local x, y = pos:GetXY()
+    x, y = x * 100, y * 100
+
+    for _, delve in ipairs(delves) do
+        if zone == delve.zone then
+            local dx, dy = delve.coords[1], delve.coords[2]
+            -- Within 2 units radius; adjust as needed
+            if math.abs(x - dx) < 2 and math.abs(y - dy) < 2 then
+                return true
+            end
+        end
+    end
+    return false
+end
+
 --************ THEMES ************
 local themelist, customlist
 local fontlist = {
@@ -1358,17 +1398,30 @@ end
 function MDH:ROLE_CHANGED_INFORM() MDH:GROUP_ROSTER_UPDATE() end
 
 function MDH:ZONE_CHANGED_NEW_AREA()
-	local inInstance = (select(2, GetInstanceInfo()) ~= "none")
-	if UnitIsGhost("player") then return end
-	if inInstance then
-		if MDH.remind then 
-		else
-			StaticPopup_Show("MDH_REMINDER")
-			MDH.remind = true
-		end
-	else MDH.remind = nil end
-end
+    local _, instanceType, _, _, _, _, _, instanceID = GetInstanceInfo()
+    if UnitIsGhost("player") then return end
 
+    -- Auto-set hunter's pet as target in a delve
+    if MDH.uc == "HUNTER" and IsInDelve() then
+        if UnitExists("pet") then
+            MDH.db.profile.target = "pet"
+            MDH.db.profile.name = UnitName("pet")
+            MDH:MDHEditMacro()
+            MDH:MDHTextUpdate()
+        end
+    end
+
+    -- Existing reminder logic (this is the block you posted)
+    if instanceType ~= "none" then
+        if MDH.remind then 
+        else
+            StaticPopup_Show("MDH_REMINDER")
+            MDH.remind = true
+        end
+    else 
+        MDH.remind = nil 
+    end
+end
 function MDH:PLAYER_TARGET_CHANGED()
 	if not InCombatLockdown() then
 		if MDH.db.profile.target == "target" then
