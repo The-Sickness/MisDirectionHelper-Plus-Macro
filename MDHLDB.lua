@@ -155,47 +155,83 @@ function MDH:MDHLoad()
 end
 
 function MDH:MDHEditMacro()
-    if InCombatLockdown() then return end
-
-    local singlemacro, multiplemacro, macro, macroid
-    local spell, id, mname, modkey
-
-    if uc == "HUNTER" then
-        spell = imd
-        id = MDH.db.profile.hicon or hiconinfo[imd.name][2]
-        mname = MDH.db.profile.hname or imd.name
-    elseif uc == "ROGUE" then
-        spell = itt
-        id = MDH.db.profile.ricon or riconinfo[itt.name][2]
-        mname = MDH.db.profile.rname or itt.name
-    else
-        print("Error: Unsupported class")
+    if InCombatLockdown() then
+        print("MDH: In combat, cannot edit macro")
         return
     end
 
-    modkey = modkeys[MDH.db.profile.modkey]
-
-    mname = ensureString(mname)
-
-    MDH:MDHTextUpdate()
-
-    singlemacro = "#showtooltip\n/use [mod:" .. modkey .. ",@none][@%s,nodead]%s;%s"
-    multiplemacro = "#showtooltip\n/use [mod:" .. modkey .. ",@none][btn:1,@%s,nodead][btn:2,@%s,nodead]%s;%s"
-
-    local target = ensureString(MDH.db.profile.target or "target")
-    local target2 = ensureString(MDH.db.profile.target2 or "target")
-
-    if MDH.db.profile.target2 then
-        macro = format(multiplemacro, target, target2, spell.name, spell.name)
-    else
-        macro = format(singlemacro, target, spell.name, spell.name)
+    local uc = MDH.uc
+    if not uc then
+        print("MDH: MDH.uc is nil; aborting MDHEditMacro")
+        return
     end
-    
-    macroid = GetMacroIndexByName(mname)
-    if macroid == 0 then
-        CreateMacro(mname, iconm[id], macro, 1, 1)
+
+    local spell, id, mname
+    if uc == "HUNTER" then
+        spell = imd
+        id = MDH.db.profile.hicon or (hiconinfo and hiconinfo[imd.name] and hiconinfo[imd.name][2])
+        mname = MDH.db.profile.hname or (imd and imd.name)
+    elseif uc == "ROGUE" then
+        spell = itt
+        id = MDH.db.profile.ricon or (riconinfo and riconinfo[itt.name] and riconinfo[itt.name][2])
+        mname = MDH.db.profile.rname or (itt and itt.name)
     else
-        EditMacro(macroid, mname, iconm[id], macro)
+        print("MDH: Unsupported class in MDHEditMacro")
+        return
+    end
+
+    if not spell or not spell.name then
+        print("MDH: missing spell info; aborting")
+        return
+    end
+
+    local modkey = (modkeys and modkeys[MDH.db.profile.modkey]) or tostring(MDH.db.profile.modkey or "shift")
+
+    -- key point: prefer db.profile.target; if blank, use db.profile.name (the typed player name)
+    local target = MDH.db and MDH.db.profile and MDH.db.profile.target
+    if not target or target == "" then target = MDH.db.profile.name end
+    if not target or target == "" then target = "target" end
+
+    local target2 = MDH.db and MDH.db.profile and MDH.db.profile.target2
+    if not target2 or target2 == "" then target2 = MDH.db.profile.name2 or "" end
+
+    -- build macro body explicitly (avoid nil format usage)
+    local macro
+    if target2 ~= "" then
+        macro = "#showtooltip\n/use [mod:" .. tostring(modkey) .. ",@none][btn:1,@" .. tostring(target) .. ",nodead][btn:2,@" .. tostring(target2) .. ",nodead]" .. spell.name .. ";" .. spell.name
+    else
+        macro = "#showtooltip\n/use [mod:" .. tostring(modkey) .. ",@none][@" .. tostring(target) .. ",nodead]" .. spell.name .. ";" .. spell.name
+    end
+
+    print(("MDH: Attempting to write macro '%s' with target='%s' target2='%s' ->\n%s"):format(tostring(mname), tostring(target), tostring(target2), tostring(macro)))
+
+    local macroid = GetMacroIndexByName(mname or "")
+    if macroid == 0 then
+        -- try to create per-character macro
+        CreateMacro(mname, iconm[id], macro, true)
+        macroid = GetMacroIndexByName(mname or "")
+        print(("MDH: CreateMacro attempted, new index=%s"):format(tostring(macroid)))
+    else
+        local _, _, _, isPerChar = GetMacroInfo(macroid)
+        if not isPerChar then
+            -- replace global macro to avoid scope conflicts
+            DeleteMacro(macroid)
+            CreateMacro(mname, iconm[id], macro, true)
+            macroid = GetMacroIndexByName(mname or "")
+            print(("MDH: Replaced global macro, new index=%s"):format(tostring(macroid)))
+        else
+            EditMacro(macroid, mname, iconm[id], macro)
+            print(("MDH: Edited macro index=%s"):format(tostring(macroid)))
+        end
+    end
+
+    -- Verify what the client reports the macro body as
+    local idx = GetMacroIndexByName(mname or "")
+    if idx and idx > 0 then
+        local nm, ic, body = GetMacroInfo(idx)
+        print(("MDH: Macro '%s' body after edit/create:\n%s"):format(tostring(nm), tostring(body)))
+    else
+        print("MDH: Macro not found after create/edit; CreateMacro/EditMacro may have failed (macro limit?)")
     end
 end
 
@@ -1522,28 +1558,64 @@ end
 
 function MDH:PLAYER_REGEN_DISABLED() if MDH.tooltip then MDH.tooltip:Hide() end end
 
-local function onAccept(this)
-	local button = this.button
-	local t
-	if not UnitAffectingCombat("player") then
-		if button == "LeftButton" then
-			t = string.lower(this.editBox:GetText() or "")
-			MDH.db.profile.target = t
-			MDH.db.profile.name = t
-		else
-			t = string.lower(this.editBox:GetText() or "")
-			MDH.db.profile.target2 = t
-			MDH.db.profile.name2 = t
-		end
-		if t == "pet" then
-			if button == "LeftButton" then MDH.db.profile.name = MDH.db.profile.petname
-			else MDH.db.profile.name2 = MDH.db.profile.petname end
-		elseif t == "tank" then MDH:MHDtank(button)
-		elseif (t == "target") or (t == "t") then MDH:MHDtarget(button) end
-		MDH:MDHEditMacro()
-	end
-	MDH:MDHShowToolTip()
-	this:Hide()
+-- Replacement OnAccept handler (MDHLDB.lua)
+local function onAccept(self)
+    local button = self.button
+    local rawText = ""
+
+    -- defensive: ensure editBox exists and has GetText
+    if self.editBox and type(self.editBox.GetText) == "function" then
+        rawText = self.editBox:GetText() or ""
+    else
+        rawText = ""
+        -- debug: the popup might not have an edit box in some cases
+        print("MDH: onAccept called but editBox is missing; using empty string")
+    end
+
+    -- preserve exact capitalization for player names; trim whitespace
+    local t = tostring(rawText):match("^%s*(.-)%s*$") or ""
+
+    if UnitAffectingCombat("player") then
+        print("MDH: Cannot change target while in combat")
+        self:Hide()
+        return
+    end
+
+    if button == "LeftButton" then
+        MDH.db.profile.target = t
+        MDH.db.profile.name = t
+    else
+        MDH.db.profile.target2 = t
+        MDH.db.profile.name2 = t
+    end
+
+    -- map special tokens case-insensitively
+    local tl = string.lower(t)
+    if tl == "pet" then
+        if button == "LeftButton" then
+            MDH.db.profile.name = MDH.db.profile.petname
+        else
+            MDH.db.profile.name2 = MDH.db.profile.petname
+        end
+    elseif tl == "tank" then
+        MDH:MHDtank(button)
+    elseif (tl == "target") or (tl == "t") then
+        MDH:MHDtarget(button)
+    end
+
+    -- safe debug print: we always use an explicit literal format string
+    local fmt = "MDH: Set target (button=%s) target='%s' name='%s'"
+    print(string.format(fmt, tostring(button), tostring(MDH.db.profile.target or ""), tostring(MDH.db.profile.name or "")))
+
+    -- call MDHEditMacro protected so we can capture and print errors (stacktrace)
+    local ok, err = pcall(function() MDH:MDHEditMacro() end)
+    if not ok then
+        print("MDH: Error while editing macro: " .. tostring(err))
+        -- optional: print(debugstack()) if available in your environment
+    end
+
+    MDH:MDHShowToolTip()
+    self:Hide()
 end
 
 StaticPopupDialogs["MDH_GET_PLAYER_NAME"] = {
