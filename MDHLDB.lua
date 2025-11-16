@@ -235,45 +235,59 @@ local function createMainPanel()
     return frame
 end
 
-local delves = {
-    { name = "Archival Assault", zone = "K'aresh", coords = {55, 48} },
-    { name = "The Dread Pit", zone = "Ringing Deeps", coords = {68, 39} },
-    { name = "Earthcrawl Mines", zone = "Isle of Dorn", coords = {35.5, 79.2} },
-    { name = "Excavation Site 9", zone = "Ringing Deeps", coords = {81, 98} },
-    { name = "Fungal Folly", zone = "Isle of Dorn", coords = {51.7, 70.4} },
-    { name = "Kriegval's Rest", zone = "Isle of Dorn", coords = {63.0, 42.5} },
-    { name = "Mycomancer Cavern", zone = "Hallowfall", coords = {70, 30} },
-    { name = "Nightfall Sanctum", zone = "Hallowfall", coords = {34, 47} },
-    { name = "Sidestreet Sluice", zone = "Undermine", coords = {35, 53} },
-    { name = "The Sinkhole", zone = "Hallowfall", coords = {50, 52} },
-    { name = "Skittering Breach", zone = "Hallowfall", coords = {65, 61} },
-    { name = "The Spiral Weave", zone = "Azj-Kahet", coords = {46.5, 25.4} },
-    { name = "Tak-Rethan Abyss", zone = "Azj-Kahet", coords = {55.6, 75.7} },
-    { name = "The Underkeep", zone = "Azj-Kahet", coords = {52.6, 88.9} },
-    { name = "The Waterworks", zone = "Ringing Deeps", coords = {37, 50} },
+local DELVE_MAP_IDS = {
+    [2445] = true,
+    [2446] = true,
+    [2447] = true,
+    [2448] = true,
+    [2449] = true,
+    [2450] = true,
+    [2451] = true,
+    [2452] = true,
+    [2453] = true,
+    [2454] = true,
+    [2455] = true,
+    [2456] = true,
+    [2457] = true,
+    [2458] = true,
+    [2459] = true,
 }
 
--- Checks if the player is in a delve by zone and near the delve coordinates
-local function IsInDelve()
-    local zone = GetZoneText() or GetRealZoneText()
-    local mapID = C_Map.GetBestMapForUnit("player")
-    if not mapID then return false end
-    local pos = C_Map.GetPlayerMapPosition(mapID, "player")
-    if not pos then return false end
-    local x, y = pos:GetXY()
-    x, y = x * 100, y * 100
 
-    for _, delve in ipairs(delves) do
-        if zone == delve.zone then
-            local dx, dy = delve.coords[1], delve.coords[2]
-            -- Within 2 units radius; adjust as needed
-            if math.abs(x - dx) < 2 and math.abs(y - dy) < 2 then
-                return true
-            end
-        end
+
+local function IsInDelveEnhanced()
+    local mapID = C_Map.GetBestMapForUnit("player")
+    if mapID and DELVE_MAP_IDS[mapID] then
+        return true
     end
     return false
 end
+
+function MDH:EnsurePetDisplay(retries)
+    if not MDH.db or not MDH.db.profile then return end
+    if MDH.uc ~= "HUNTER" then return end
+    if not IsInDelveEnhanced() then return end
+    if UnitExists("pet") then
+        local petName = UnitName("pet")
+        MDH.db.profile.target = "pet"
+        MDH.db.profile.name = petName
+        MDH.db.profile.petname = petName
+        if MDH.MDHEditMacro then MDH:MDHEditMacro() end
+        if MDH.MDHTextUpdate then MDH:MDHTextUpdate() end
+        if not MDH._delvePetShown then
+            print("|cFF33FF99MDH:|r Delve detected – auto-set GUI to pet: " .. (petName or "<unknown>"))
+            MDH._delvePetShown = true
+        end
+    else
+        retries = (retries or 0) + 1
+        if retries <= 5 then
+            C_Timer.After(1, function() self:EnsurePetDisplay(retries) end)
+        end
+    end
+end
+
+-- Call as method:
+MDH:EnsurePetDisplay()
 
 --************ THEMES ************
 local themelist, customlist
@@ -1375,6 +1389,7 @@ function MDH:MDHOnload()
     MDH:RegisterEvent("UNIT_SPELLCAST_SUCCEEDED")
     MDH:RegisterEvent("PLAYER_REGEN_DISABLED")
     MDH:RegisterEvent("PLAYER_FOCUS_CHANGED")
+	MDH:RegisterEvent("SCENARIO_UPDATE")
     MDH.waitFrame = MDHWaitFrame or CreateFrame("Frame", "MDHWaitFrame")
 	if MDH.db.profile.clearleave or MDH.db.profile.autotank then MDH:RegisterEvent("GROUP_ROSTER_UPDATE") end
 	if MDH.db.profile.autotank then MDH:RegisterEvent("ROLE_CHANGED_INFORM") end
@@ -1397,31 +1412,27 @@ end
 
 function MDH:ROLE_CHANGED_INFORM() MDH:GROUP_ROSTER_UPDATE() end
 
-function MDH:ZONE_CHANGED_NEW_AREA()
-    local _, instanceType, _, _, _, _, _, instanceID = GetInstanceInfo()
-    if UnitIsGhost("player") then return end
-
-    -- Auto-set hunter's pet as target in a delve
-    if MDH.uc == "HUNTER" and IsInDelve() then
-        if UnitExists("pet") then
-            MDH.db.profile.target = "pet"
-            MDH.db.profile.name = UnitName("pet")
-            MDH:MDHEditMacro()
-            MDH:MDHTextUpdate()
-        end
+function MDH:UpdatePetGUI()
+    -- If you use a frame, set the text to the current target/pet
+    if MDH.mainPanel and MDH.mainPanel.targetLabel then
+        MDH.mainPanel.targetLabel:SetText("Target: " .. (MDH.db.profile.name or "<none>"))
     end
-
-    -- Existing reminder logic (this is the block you posted)
-    if instanceType ~= "none" then
-        if MDH.remind then 
-        else
-            StaticPopup_Show("MDH_REMINDER")
-            MDH.remind = true
-        end
-    else 
-        MDH.remind = nil 
+    -- If using LDB, update its text
+    if MDH.dataObject then
+        MDH:MDHTextUpdate()
     end
 end
+
+function MDH:SCENARIO_UPDATE()
+    C_Timer.After(0.5, function() self:UpdatePetGUI() end)
+end
+
+function MDH:UNIT_PET(event, unit)
+    if unit == "player" then
+        UpdatePetGUI()
+    end
+end
+
 function MDH:PLAYER_TARGET_CHANGED()
 	if not InCombatLockdown() then
 		if MDH.db.profile.target == "target" then
@@ -1440,7 +1451,35 @@ function MDH:PLAYER_FOCUS_CHANGED()
 	end
 end
 
-function MDH:PLAYER_ENTERING_WORLD() MDH:MDHLoad() end
+function MDH:PLAYER_ENTERING_WORLD()
+    MDH:MDHLoad()
+    C_Timer.After(2, function() MDH:EnsurePetDisplay() end) -- CORRECT
+end
+
+function MDH:ZONE_CHANGED_NEW_AREA()
+    self:EnsurePetDisplay()
+    local _, instanceType = GetInstanceInfo()
+    if instanceType ~= "none" then
+        if MDH.db.profile.remind and not MDH.remind then
+            StaticPopup_Show("MDH_REMINDER")
+            MDH.remind = true
+        end
+    else
+        MDH.remind = nil
+        MDH._delvePetShown = nil
+    end
+end
+
+--function MDH:SCENARIO_UPDATE()
+ --   C_Timer.After(0.5, EnsurePetDisplay)
+--end
+
+function MDH:UNIT_PET(event, unit)
+    if unit == "player" then
+        -- existing pet capture logic...
+        EnsurePetDisplay()
+    end
+end
 
 function MDH:UNIT_PET(event, unitid)
 	local pet
