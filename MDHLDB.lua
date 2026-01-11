@@ -198,19 +198,19 @@ function MDH:MDHEditMacro()
     -- build macro body explicitly (avoid nil format usage)
     local macro
     if target2 ~= "" then
-        macro = "#showtooltip\n/use [mod:" .. tostring(modkey) .. ",@none][btn:1,@" .. tostring(target) .. ",nodead][btn:2,@" .. tostring(target2) .. ",nodead]" .. spell.name .. ";" .. spell.name
+    --    macro = "#showtooltip\n/use [mod:" .. tostring(modkey) .. ",@none][btn:1,@" .. tostring(target) .. ",nodead][btn:2,@" .. tostring(target2) .. ",nodead]" .. spell.name .. ";" .. spell.name
     else
-        macro = "#showtooltip\n/use [mod:" .. tostring(modkey) .. ",@none][@" .. tostring(target) .. ",nodead]" .. spell.name .. ";" .. spell.name
+     --   macro = "#showtooltip\n/use [mod:" .. tostring(modkey) .. ",@none][@" .. tostring(target) .. ",nodead]" .. spell.name .. ";" .. spell.name
     end
 
-    print(("MDH: Attempting to write macro '%s' with target='%s' target2='%s' ->\n%s"):format(tostring(mname), tostring(target), tostring(target2), tostring(macro)))
+  --  print(("MDH: Attempting to write macro '%s' with target='%s' target2='%s' ->\n%s"):format(tostring(mname), tostring(target), tostring(target2), tostring(macro)))
 
     local macroid = GetMacroIndexByName(mname or "")
     if macroid == 0 then
         -- try to create per-character macro
         CreateMacro(mname, iconm[id], macro, true)
         macroid = GetMacroIndexByName(mname or "")
-        print(("MDH: CreateMacro attempted, new index=%s"):format(tostring(macroid)))
+     --   print(("MDH: CreateMacro attempted, new index=%s"):format(tostring(macroid)))
     else
         local _, _, _, isPerChar = GetMacroInfo(macroid)
         if not isPerChar then
@@ -218,10 +218,10 @@ function MDH:MDHEditMacro()
             DeleteMacro(macroid)
             CreateMacro(mname, iconm[id], macro, true)
             macroid = GetMacroIndexByName(mname or "")
-            print(("MDH: Replaced global macro, new index=%s"):format(tostring(macroid)))
+        --    print(("MDH: Replaced global macro, new index=%s"):format(tostring(macroid)))
         else
             EditMacro(macroid, mname, iconm[id], macro)
-            print(("MDH: Edited macro index=%s"):format(tostring(macroid)))
+         --   print(("MDH: Edited macro index=%s"):format(tostring(macroid)))
         end
     end
 
@@ -229,9 +229,9 @@ function MDH:MDHEditMacro()
     local idx = GetMacroIndexByName(mname or "")
     if idx and idx > 0 then
         local nm, ic, body = GetMacroInfo(idx)
-        print(("MDH: Macro '%s' body after edit/create:\n%s"):format(tostring(nm), tostring(body)))
+    --    print(("MDH: Macro '%s' body after edit/create:\n%s"):format(tostring(nm), tostring(body)))
     else
-        print("MDH: Macro not found after create/edit; CreateMacro/EditMacro may have failed (macro limit?)")
+     --   print("MDH: Macro not found after create/edit; CreateMacro/EditMacro may have failed (macro limit?)")
     end
 end
 
@@ -311,7 +311,7 @@ function MDH:EnsurePetDisplay(retries)
         if MDH.MDHEditMacro then MDH:MDHEditMacro() end
         if MDH.MDHTextUpdate then MDH:MDHTextUpdate() end
         if not MDH._delvePetShown then
-            print("|cFF33FF99MDH:|r Delve detected – auto-set GUI to pet: " .. (petName or "<unknown>"))
+         --   print("|cFF33FF99MDH:|r Delve detected – auto-set GUI to pet: " .. (petName or "<unknown>"))
             MDH._delvePetShown = true
         end
     else
@@ -1604,15 +1604,15 @@ local function onAccept(self)
     end
 
     -- safe debug print: we always use an explicit literal format string
-    local fmt = "MDH: Set target (button=%s) target='%s' name='%s'"
-    print(string.format(fmt, tostring(button), tostring(MDH.db.profile.target or ""), tostring(MDH.db.profile.name or "")))
+  --  local fmt = "MDH: Set target (button=%s) target='%s' name='%s'"
+ --   print(string.format(fmt, tostring(button), tostring(MDH.db.profile.target or ""), tostring(MDH.db.profile.name or "")))
 
     -- call MDHEditMacro protected so we can capture and print errors (stacktrace)
-    local ok, err = pcall(function() MDH:MDHEditMacro() end)
-    if not ok then
-        print("MDH: Error while editing macro: " .. tostring(err))
+ --   local ok, err = pcall(function() MDH:MDHEditMacro() end)
+  --  if not ok then
+     --   print("MDH: Error while editing macro: " .. tostring(err))
         -- optional: print(debugstack()) if available in your environment
-    end
+  -- end
 
     MDH:MDHShowToolTip()
     self:Hide()
